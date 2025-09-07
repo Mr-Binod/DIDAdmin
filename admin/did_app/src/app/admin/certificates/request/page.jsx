@@ -1,10 +1,11 @@
 // src/app/admin/certificate-requests/page.jsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import Modal from '@/components/UI/Modal';
 import LoadingSpinner from "@/components/UI/Spinner";
 import Input from "@/components/UI/Input";
+import Button from '@/components/UI/Button';
 import { useAdminInfoStore } from '@/Store/useAdminStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -14,27 +15,12 @@ export default function AdminCertificateRequestsPage() {
   const { admin: user } = useAdminInfoStore();
   const queryClient = useQueryClient();
 
-  // 알림 (헤더에 주입) - 로컬스토리지 연동
-  const [notifications, setNotifications] = useState([]);
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('notifications') || '[]');
-    if (Array.isArray(saved) && saved.length) setNotifications(saved);
-  }, []);
-  useEffect(() => {
-    if (notifications.length > 0) {
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-    }
-  }, [notifications]);
-  const pushNotif = (title, message) =>
-    setNotifications((prev) => [
-      { id: Date.now(), title, message, ts: Date.now(), read: false },
-      ...prev,
-    ]);
-
-  // 탭 상태
-  const [activeTab, setActiveTab] = useState('all'); // all | issue | revoke
+  // 결과 모달 상태
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultMessage, setResultMessage] = useState("");
 
   // UI 상태들
+  const [requestTypeFilter, setRequestTypeFilter] = useState('all'); // all | issue | revoke
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -50,15 +36,12 @@ export default function AdminCertificateRequestsPage() {
   const [processType, setProcessType] = useState(''); // 'approve' | 'reject'
   const [processReason, setProcessReason] = useState('');
 
-  // 경고 모달 상태
-  const [showWarningModal, setShowWarningModal] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
-
   // 데이터 fetching
   const { data: allRequests = [], isLoading, isError } = useQuery({
     queryKey: ['certificateRequests'],
     queryFn: async () => {
       const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequestlogs`);
+      console.log(data, 'certificateRequests')
       return data.data || [];
     },
     refetchOnWindowFocus: true,
@@ -67,13 +50,6 @@ export default function AdminCertificateRequestsPage() {
   // 요청 처리 Mutation
   const processRequestMutation = useMutation({
     mutationFn: async ({ request, type, reason }) => {
-      // TODO: 실제 API 엔드포인트로 교체해야 합니다.
-      // 예시:
-      // if (type === 'approve') {
-      //   await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequests/${request.id}/approve`);
-      // } else {
-      //   await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequests/${request.id}/reject`, { reason });
-      // }
       console.log(`Simulating ${type} for request ID: ${request.id}`);
       await new Promise(resolve => setTimeout(resolve, 500));
       return { success: true };
@@ -84,30 +60,19 @@ export default function AdminCertificateRequestsPage() {
 
       const actionText = type === 'approve' ? '승인' : '거절';
       const requestTypeText = getRequestTypeText(request.requestType);
-      pushNotif(
-        `요청 ${actionText} 완료`,
+      setResultMessage(
         `${request.userName}님의 ${request.certificateName} ${requestTypeText} 요청이 ${actionText}되었습니다.`
       );
-
-      // 대시보드용 로컬스토리지 업데이트
-      const processedRequest = {
-        ...request,
-        action: type === 'approve' ? 'approved' : 'rejected',
-        processedAt: new Date().toISOString(),
-        processReason: type === 'reject' ? processReason : null,
-        processedBy: user?.name || user?.nickname || '관리자',
-      };
-      const existingProcessed = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-      const updatedProcessed = [processedRequest, ...existingProcessed].slice(0, 50);
-      localStorage.setItem('admin_processed_requests', JSON.stringify(updatedProcessed));
-      window.dispatchEvent(new StorageEvent('storage', { key: 'admin_processed_requests', newValue: JSON.stringify(updatedProcessed) }));
+      setShowResultModal(true);
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
 
       closeProcessModal();
     },
     onError: (error, variables) => {
       console.error("Error processing request:", error);
       const actionText = variables.type === 'approve' ? '승인' : '거절';
-      showWarning(`${actionText} 처리 중 오류가 발생했습니다. 다시 시도해주세요.`);
+      setResultMessage(`${actionText} 처리 중 오류가 발생했습니다. 다시 시도해주세요.`);
+      setShowResultModal(true);
     },
   });
 
@@ -118,14 +83,14 @@ export default function AdminCertificateRequestsPage() {
 
   // 현재 탭에 따른 데이터 - 대기중인 요청만 필터링
   const currentRequests = useMemo(() => {
-    if (activeTab === 'all') {
+    if (requestTypeFilter === 'all') {
       return pendingRequests;
-    } else if (activeTab === 'issue') {
+    } else if (requestTypeFilter === 'issue') {
       return pendingRequests.filter((req) => req.requestType === 'issue');
     } else {
       return pendingRequests.filter((req) => req.requestType === 'revoke');
     }
-  }, [activeTab, pendingRequests]);
+  }, [requestTypeFilter, pendingRequests]);
 
   // 사용자 목록 (필터용)
   const users = [...new Set(currentRequests.map((req) => req.userName))];
@@ -150,7 +115,7 @@ export default function AdminCertificateRequestsPage() {
 
     if (dateRange.start || dateRange.end) {
       filtered = filtered.filter(req => {
-        const reqDate = new Date(req.requestedAt);
+        const reqDate = new Date(req.createdAt);
         if (dateRange.start && reqDate < new Date(dateRange.start)) return false;
         if (dateRange.end && reqDate > new Date(dateRange.end)) return false;
         return true;
@@ -158,8 +123,8 @@ export default function AdminCertificateRequestsPage() {
     }
 
     return filtered.sort((a, b) => {
-      const aValue = new Date(a.requestedAt);
-      const bValue = new Date(b.requestedAt);
+      const aValue = new Date(a.createdAt);
+      const bValue = new Date(b.createdAt);
 
       if (sortOrder === 'asc') {
         return aValue - bValue;
@@ -184,33 +149,17 @@ export default function AdminCertificateRequestsPage() {
     return { total, issueCount, revokeCount };
   }, [pendingRequests]);
 
-  useEffect(() => setCurrentPage(1), [activeTab, searchTerm, sortOrder, userFilter, dateRange]);
-
-  // 상태별 스타일
-  const getStatusBadge = (status) => {
-    const baseClasses = 'px-3 py-1 rounded-full text-xs font-medium';
-
-    switch (status) {
-      case 'pending':
-        return `${baseClasses} bg-yellow-100 text-yellow-700`;
-      case 'approved':
-        return `${baseClasses} bg-green-100 text-green-700`;
-      case 'rejected':
-        return `${baseClasses} bg-red-100 text-red-700`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-600`;
-    }
-  };
+  useEffect(() => setCurrentPage(1), [requestTypeFilter, searchTerm, sortOrder, userFilter, dateRange]);
 
   // 요청 타입별 배지 스타일
   const getRequestTypeBadge = (requestType) => {
     switch (requestType) {
       case 'issue':
-        return 'bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium';
+        return 'bg-blue-100 text-blue-700 px-2 py-1 rounded  font-medium';
       case 'revoke':
-        return 'bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium';
+        return 'bg-purple-100 text-purple-700 px-2 py-1 rounded  font-medium';
       default:
-        return 'bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium';
+        return 'bg-gray-100 text-gray-700 px-2 py-1 rounded  font-medium';
     }
   };
 
@@ -222,19 +171,6 @@ export default function AdminCertificateRequestsPage() {
         return '폐기';
       default:
         return '기타';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'pending':
-        return '대기중';
-      case 'approved':
-        return '승인됨';
-      case 'rejected':
-        return '거절됨';
-      default:
-        return '알 수 없음';
     }
   };
 
@@ -254,16 +190,9 @@ export default function AdminCertificateRequestsPage() {
     setProcessReason('');
   };
 
-  // 경고 모달 표시 함수
-  const showWarning = (message) => {
-    setWarningMessage(message);
-    setShowWarningModal(true);
-  };
-
-  // 경고 모달 닫기
-  const closeWarningModal = () => {
-    setShowWarningModal(false);
-    setWarningMessage('');
+  const closeResultModal = () => {
+    setShowResultModal(false);
+    setResultMessage("");
   };
 
   // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
@@ -272,7 +201,8 @@ export default function AdminCertificateRequestsPage() {
 
     // 거절일 때만 사유 입력 필수
     if (processType === 'reject' && !processReason.trim()) {
-      showWarning('거절 사유를 입력해주세요.');
+      setResultMessage('거절 사유를 입력해주세요.');
+      setShowResultModal(true);
       return;
     }
 
@@ -280,6 +210,16 @@ export default function AdminCertificateRequestsPage() {
       request: requestToProcess,
       type: processType,
       reason: processReason,
+    });
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -318,9 +258,9 @@ export default function AdminCertificateRequestsPage() {
   }
 
   return (
-    <>
-      <main className=" w-[calc(100wd - 64px) ] ml-64 mx-auto bg-lightbackblue p-4 overflow-hidden  pb-10  ">
-        <div className="w-[calc(100wd - 64px) ] min-h-screen mx-auto lg:px-12 px-6 py-6">
+    <div className="w-[calc(100wd - 64px)] bg-lightbackblue overflow-hidden pb-10">
+      <div className="min-h-screen ml-64 p-4 sm:p-6">
+        <div className="max-w-8xl px-12 mx-auto">
           {/* 상단 헤더 */}
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">수료증 요청 관리</h1>
@@ -331,53 +271,15 @@ export default function AdminCertificateRequestsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className="text-sm text-gray-500">전체 대기중 요청</div>
+              <div className=" text-gray-500">전체 대기중 요청</div>
             </div>
             <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-blue-600">{stats.issueCount}</div>
-              <div className="text-sm text-gray-500">발급 대기중</div>
+              <div className=" text-gray-500">발급 대기중</div>
             </div>
             <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-purple-600">{stats.revokeCount}</div>
-              <div className="text-sm text-gray-500">폐기 대기중</div>
-            </div>
-          </div>
-
-          {/* 탭 네비게이션 */}
-          <div className="mb-6">
-            <div className="border-b border-gray-200 bg-white rounded-t-xl">
-              <nav className="-mb-px flex px-6">
-                <button
-                  onClick={() => {
-                    setActiveTab('all');
-                    setCurrentPage(1);
-                  }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  전체 요청 ({stats.total || 0})
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('issue');
-                    setCurrentPage(1);
-                  }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'issue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  발급 요청 ({stats.issueCount || 0})
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('revoke');
-                    setCurrentPage(1);
-                  }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'revoke' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  폐기 요청 ({stats.revokeCount || 0})
-                </button>
-              </nav>
+              <div className=" text-gray-500">폐기 대기중</div>
             </div>
           </div>
 
@@ -396,6 +298,15 @@ export default function AdminCertificateRequestsPage() {
                   />
                 </div>
                 <div className="flex gap-2">
+                  <select
+                    value={requestTypeFilter}
+                    onChange={(e) => setRequestTypeFilter(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 "
+                  >
+                    <option value="all">전체 요청 ({stats.total || 0})</option>
+                    <option value="issue">발급 요청 ({stats.issueCount || 0})</option>
+                    <option value="revoke">폐기 요청 ({stats.revokeCount || 0})</option>
+                  </select>
                   <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`px-4 py-2 border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
@@ -405,13 +316,10 @@ export default function AdminCertificateRequestsPage() {
                   </button>
                   <button
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 "
                   >
                     {sortOrder === 'asc' ? '오래된순' : '최신순'}
                   </button>
-                  {/* <button onClick={loadData} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                    새로고침
-                  </button> */}
                 </div>
               </div>
 
@@ -420,7 +328,7 @@ export default function AdminCertificateRequestsPage() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">사용자</label>
+                      <label className="block  font-medium text-gray-700 mb-2">사용자</label>
                       <select
                         value={userFilter}
                         onChange={(e) => setUserFilter(e.target.value)}
@@ -435,7 +343,7 @@ export default function AdminCertificateRequestsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">시작일</label>
+                      <label className="block  font-medium text-gray-700 mb-2">시작일</label>
                       <input
                         type="date"
                         value={dateRange.start}
@@ -444,7 +352,7 @@ export default function AdminCertificateRequestsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">종료일</label>
+                      <label className="block  font-medium text-gray-700 mb-2">종료일</label>
                       <input
                         type="date"
                         value={dateRange.end}
@@ -456,104 +364,94 @@ export default function AdminCertificateRequestsPage() {
                 </div>
               )}
 
-              {/* 상태 필터 태그 - 대기중만 표시 */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${statusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                  전체 대기중 ({stats.total || 0})
-                </button>
-                <div className="px-4 py-2 rounded-full text-sm font-medium bg-blue-500 text-white">
-                  전체 대기중 ({stats.total || 0}) 
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* 요청 목록 */}
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <RequestSkeleton key={i} />
-              ))}
-            </div>
-          ) : paginatedRequests.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">요청 내역이 없습니다</h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm
-                  ? '검색 조건에 맞는 요청이 없어요.'
-                  : `아직 ${activeTab === 'all' ? '' : activeTab === 'issue' ? '발급' : '폐기'} 요청이 없어요.`}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {paginatedRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {request.certificateName}
-                        </h3>
-                        {activeTab === 'all' && (
-                          <span className={getRequestTypeBadge(request.requestType)}>
-                            {getRequestTypeText(request.requestType)}
-                          </span>
-                        )}
-                        <span className={getStatusBadge(request.status)}>
-                          {getStatusText(request.status)}
-                        </span>
-                      </div>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {isLoading ? (
+              <div className="p-12 text-center">
+                <LoadingSpinner message="요청 목록 로딩 중..." />
+              </div>
+            ) : paginatedRequests.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <p className="text-lg mb-2">처리할 요청이 없습니다</p>
+                <p className="">선택한 조건에 맞는 요청이 없습니다.</p>
+              </div>
+            ) : (
+              <Fragment>
+                <div className="hidden md:grid grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-gray-500 uppercase tracking-wider">
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
-                        <div><span className="text-gray-500">요청자:</span> <span className="ml-2 text-gray-900 font-medium">{request.userName}</span></div>
-                        <div><span className="text-gray-500">이메일:</span> <span className="ml-2 text-gray-900 font-medium">{request.userEmail}</span></div>
-                        <div><span className="text-gray-500">요청일:</span> <span className="ml-2 text-gray-900 font-medium">{new Date(request.requestedAt).toLocaleDateString('ko-KR')}</span></div>
-                      </div>
-
-                      <div className="mb-3">
-                        <span className="text-gray-500 text-sm">요청 사유:</span>
-                        <p className="mt-1 text-gray-900 text-sm">{request.reason}</p>
-                      </div>
-
-                      {request.certificateId && (
-                        <div className="text-xs text-gray-500">수료증 ID: {request.certificateId}</div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 ml-6">
-                      <button
-                        onClick={() => openProcessModal(request, 'approve')}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
-                      >
-                        승인
-                      </button>
-                      <button
-                        onClick={() => openProcessModal(request, 'reject')}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                      >
-                        거절
-                      </button>
-                    </div>
-                  </div>
+                  <div className="col-span-1">번호</div>
+                  <div className="col-span-1">요청자 이름</div>
+                  <div className="col-span-1">요청자 아이디</div>
+                  <div className="col-span-1">요청 유형</div>
+                  <div className="col-span-1">수료증명</div>
+                  <div className="col-span-1">요청일</div>
+                  <div className="col-span-1 text-center">처리</div>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="divide-y divide-gray-200">
+                  {paginatedRequests.map((request, index) => (
+                    <div key={request.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="grid grid-cols-1 md:grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] text-center gap-4 items-center">
+                        {/* Mobile View */}
+                        <div>{index + 1 }</div>
+                        <div className="md:hidden space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium text-gray-900">{request.userName}</div>
+                            <span className={getRequestTypeBadge(request.status)}>
+                              {getRequestTypeText(request.status)}
+                            </span>
+                          </div>
+                          
+                          <div className=" text-gray-800">{request.certificateName}</div>
+                          <div className=" text-gray-500">요청일: {formatDate(request.createdAt)}</div>
+                          <div className="flex gap-2 pt-2">
+                            <Button onClick={() => openProcessModal(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded ">승인</Button>
+                            <Button onClick={() => openProcessModal(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded ">거절</Button>
+                          </div>
+                        </div>
+
+                        {/* Desktop View */}
+                        <div className="hidden md:block col-span-1  font-medium text-gray-900">{request.userName}</div>
+                        <div className=" text-gray-800">{request.userId}</div>
+                        <div className="hidden md:block col-span-1">
+                          <span className={getRequestTypeBadge(request.request)}>
+                            {getRequestTypeText(request.request)}
+                          </span>
+                        </div>
+                        <div className="hidden md:block col-span-1  text-gray-800">{request.certificateName}</div>
+                        <div className="hidden md:block col-span-1  text-gray-500">{formatDate(request.createdAt)}</div>
+                        <div className="hidden md:flex col-span-1 justify-center gap-2">
+                          <Button
+                            onClick={() => openProcessModal(request, 'approve')}
+                            disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
+                            className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 rounded-lg"
+                          >
+                            승인
+                          </Button>
+                          <Button
+                            onClick={() => openProcessModal(request, 'reject')}
+                            disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
+                            className="bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-lg"
+                          >
+                            거절
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Fragment>
+            )}
+          </div>
 
           {/* 페이지네이션 */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-6">
+          {totalPages && (
+            <div className=" mt-12  flex justify-center items-center gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm"
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
               >
                 이전
               </button>
@@ -575,7 +473,9 @@ export default function AdminCertificateRequestsPage() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 border rounded-lg text-sm ${currentPage === pageNum ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 hover:bg-gray-50'
+                      className={`px-4 py-2 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
+                          ? 'bg-borderbackblue text-white '
+                          : ' hover:bg-gray-50'
                         }`}
                     >
                       {pageNum}
@@ -587,16 +487,14 @@ export default function AdminCertificateRequestsPage() {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm"
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
               >
                 다음
               </button>
             </div>
           )}
-
-
         </div>
-      </main>
+      </div>
 
       {/* 처리 확인 모달 */}
       <Modal isOpen={showProcessModal} onClose={closeProcessModal}>
@@ -604,12 +502,12 @@ export default function AdminCertificateRequestsPage() {
           <h3 className="text-lg font-semibold mb-4">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
           <div className="mb-4">
             <p className="text-gray-700 font-medium mb-2">수료증:</p>
-            <p className="text-sm text-gray-600">{requestToProcess?.certificateName}</p>
+            <p className=" text-gray-600">{requestToProcess?.certificateName}</p>
           </div>
 
           <div className="mb-4">
             <p className="text-gray-700 font-medium mb-2">요청자:</p>
-            <p className="text-sm text-gray-600">
+            <p className=" text-gray-600">
               {requestToProcess?.userName} ({requestToProcess?.userEmail})
             </p>
           </div>
@@ -630,7 +528,7 @@ export default function AdminCertificateRequestsPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={4}
               />
-              <p className="text-xs text-gray-500 mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
+              <p className=" text-gray-500 mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
             </div>
           )}
 
@@ -653,19 +551,19 @@ export default function AdminCertificateRequestsPage() {
       </Modal>
 
       {/* 경고 모달 */}
-      <Modal isOpen={showWarningModal} onClose={closeWarningModal}>
+      <Modal isOpen={showResultModal} onClose={closeResultModal}>
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">알림</h3>
-          <p className="text-gray-700 mb-6 text-center">{warningMessage}</p>
+          <p className="text-gray-700 mb-6 text-center whitespace-pre-line">{resultMessage}</p>
 
           <button
-            onClick={closeWarningModal}
+            onClick={closeResultModal}
             className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
           >
             확인
           </button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
