@@ -342,31 +342,37 @@ export default function DashboardContent() {
             {/* 통계 카드 */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-6">
-                {isSuperAdmin ? "시스템 현황" : "내 관리 현황"}
+                 "내 관리 현황"
               </h3>
 
               {isSuperAdmin ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-xl">
-                    <p className="text-sm text-blue-600 mb-2 font-medium">총 발급 기관</p>
-                    <p className="text-3xl font-bold text-blue-700">{stats.totalInstitutions}</p>
-                  </div>
+                  
                   <div className="text-center p-4 bg-green-50 rounded-xl">
                     <p className="text-sm text-green-600 mb-2 font-medium">총 관리자</p>
                     <p className="text-3xl font-bold text-green-700">{stats.totalAdmins}</p>
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-xl">
-                    <p className="text-sm text-purple-600 mb-2 font-medium">총 발급 수료증</p>
-                    <p className="text-3xl font-bold text-purple-700">{stats.totalCertificates}</p>
+                  <div className="text-center p-4 bg-slate-50 rounded-xl border">
+                    <p className="text-sm text-slate-600 mb-1 font-medium">전체 수료증</p>
+                    <p className="text-2xl font-bold text-slate-800">{stats.myCertificates}</p>
                   </div>
-                  <div className="text-center p-4 bg-indigo-50 rounded-xl">
-                    <p className="text-sm text-indigo-600 mb-2 font-medium">오늘 발급</p>
-                    <p className="text-3xl font-bold text-indigo-700">{stats.todayIssued}</p>
+                  <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
+                    <p className="text-sm text-green-600 mb-1 font-medium">승인한 발급</p>
+                    <p className="text-2xl font-bold text-green-700">{stats.approvedCertificates || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-pink-50 rounded-xl">
-                    <p className="text-sm text-pink-600 mb-2 font-medium">이번 달 발급</p>
-                    <p className="text-3xl font-bold text-pink-700">{stats.monthlyIssued}</p>
+                  <div className="text-center p-4 bg-red-50 rounded-xl border border-red-200">
+                    <p className="text-sm text-red-600 mb-1 font-medium">거절한 요청</p>
+                    <p className="text-2xl font-bold text-red-700">{stats.rejectedRequests || 0}</p>
                   </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <p className="text-sm text-purple-600 mb-1 font-medium">승인한 폐기</p>
+                    <p className="text-2xl font-bold text-purple-700">{stats.revokedCertificates || 0}</p>
+                  </div>
+                  <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                    <p className="text-sm text-indigo-600 mb-1 font-medium">총 처리 건수</p>
+                    <p className="text-2xl font-bold text-indigo-700">{stats.totalProcessed || 0}</p>
+                  </div>
+                  
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -395,7 +401,7 @@ export default function DashboardContent() {
             </div>
 
             {/* 최근 처리한 수료증 내역 */}
-            {!isSuperAdmin && (
+            
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between mb-6">
@@ -728,7 +734,7 @@ export default function DashboardContent() {
                   </>
                 )}
               </div>
-            )}
+           
           </div>
         </main>
       </div>

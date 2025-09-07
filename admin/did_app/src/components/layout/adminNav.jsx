@@ -2,10 +2,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationBell from "../UI/NotificationBell";
+import { useAdminInfoStore } from "../../Store/useAdminStore";
 
 export default function AdminNav() {
   const [notifications, setNotifications] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
+  const {admin} = useAdminInfoStore();
+
 
   useEffect(() => {
     // localStorage에서 로그인한 관리자 정보 불러오기
@@ -33,21 +36,27 @@ export default function AdminNav() {
   }, []);
 
   return (
-    <div className="fixed top-4 right-6 flex items-center gap-4 z-50">
+    <div className="fixed top-15 right-28 flex items-center  z-50">
       {/* 알림벨 */}
-      <NotificationBell
-        notifications={notifications}
-        setNotifications={setNotifications}
-      />
+      <div className="flex border border-amber-500 w-fit gap-6 items-center font-bold" >
 
-      {/* 관리자 이름 */}
-      {userInfo && (
-        <Link href="/admin/profile">
-          <span className="text-gray-800 font-medium cursor-pointer hover:underline">
-            {userInfo.userName}님
-          </span>
-        </Link>
-      )}
+        
+        <NotificationBell
+          notifications={notifications}
+          setNotifications={setNotifications}
+        />
+
+        {/* 관리자 이름 */}
+        {userInfo && (
+          <Link href="/admin/profile">
+            <span className="text-gray-800 font-medium cursor-pointer hover:underline">
+              {userInfo.userName}님
+            </span>
+          </Link>
+        )}
+        <img src={admin.imgPath} alt="" />
+        <span>{admin.nickName}</span>
+      </div>
     </div>
   );
 }

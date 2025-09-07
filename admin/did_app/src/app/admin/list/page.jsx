@@ -4,12 +4,13 @@ import Button from "@/components/UI/Button";
 import Modal from "@/components/UI/Modal";
 import LoadingSpinner from "@/components/UI/Spinner";
 import Input from "@/components/UI/Input";
+import { useApprovedAdminsStore } from "@/Store/useAdminStore";
 
 export default function AdminListPage() {
-  const [admins, setAdmins] = useState([]);
+  const {admins, setAdmins} = useApprovedAdminsStore();
   const [filteredAdmins, setFilteredAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
+  const [loading, setLoading] = useState(false);
+
   // 결과 모달 상태 (에러 표시용)
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
@@ -18,19 +19,20 @@ export default function AdminListPage() {
   const [sortBy, setSortBy] = useState("newest");
 
   // 페이지 로드 시 관리자 목록 불러오기
-  useEffect(() => {
-    loadAdmins();
-  }, []);
+  // useEffect(() => {
+  //   loadAdmins();
+  // }, []);
 
   // 필터링 및 정렬
   useEffect(() => {
     let filtered = [...admins];
+    console.log(admins, 'admins')
 
     // 검색 필터
     if (searchTerm.trim()) {
-      filtered = filtered.filter(admin => 
+      filtered = filtered.filter(admin =>
         admin.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.userId.toLowerCase().includes(searchTerm.toLowerCase()) 
+        admin.userId.toLowerCase().includes(searchTerm.toLowerCase())
         // ||
         // admin.company.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -59,27 +61,27 @@ export default function AdminListPage() {
     return { total };
   }, [admins]);
 
-  const loadAdmins = () => {
-    setLoading(true);
-    try {
-      // localStorage에서 승인된 관리자만 필터링
-      const allAdmins = JSON.parse(localStorage.getItem("admins") || "[]");
-      const approvedAdmins = allAdmins
-        .filter(admin => admin.approved && !admin.rejected)
-        .map(admin => ({
-          ...admin,
-          role: admin.role || "admin", // 기본값 설정
-          isActive: admin.isActive !== false // 기본값은 활성
-        }));
-      setAdmins(approvedAdmins);
-    } catch (error) {
-      console.error("관리자 목록 로드 실패:", error);
-      setResultMessage("관리자 목록을 불러오는 중 오류가 발생했습니다.");
-      setShowResultModal(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const loadAdmins = () => {
+  //   setLoading(true);
+  //   try {
+  //     // localStorage에서 승인된 관리자만 필터링
+  //     const allAdmins = JSON.parse(localStorage.getItem("admins") || "[]");
+  //     const approvedAdmins = allAdmins
+  //       .filter(admin => admin.approved && !admin.rejected)
+  //       .map(admin => ({
+  //         ...admin,
+  //         role: admin.role || "admin", // 기본값 설정
+  //         isActive: admin.isActive !== false // 기본값은 활성
+  //       }));
+  //     setAdmins(approvedAdmins);
+  //   } catch (error) {
+  //     console.error("관리자 목록 로드 실패:", error);
+  //     setResultMessage("관리자 목록을 불러오는 중 오류가 발생했습니다.");
+  //     setShowResultModal(true);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const closeResultModal = () => {
     setShowResultModal(false);
@@ -164,7 +166,7 @@ export default function AdminListPage() {
                   <div className="hidden md:block">가입일시</div>
                 </div>
               </div>
-              
+
               {/* 목록 */}
               <div className="divide-y divide-gray-200">
                 {filteredAdmins.map((admin) => (
@@ -188,12 +190,12 @@ export default function AdminListPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* 회사명 - 데스크탑에서만 표시 */}
                       <div className="hidden md:block">
                         <div className="text-sm text-gray-900">{admin.company}</div>
                       </div>
-                      
+
                       {/* 가입일시 - 데스크탑에서만 표시 */}
                       <div className="hidden md:block">
                         <div className="text-sm text-gray-900">

@@ -64,6 +64,7 @@ export default function LoginForm() {
     }
 
     try {
+      console.log(process.env.NEXT_PUBLIC_BASE_URL, 'baseurl')
       const adminLogin = await axiox.post(process.env.NEXT_PUBLIC_BASE_URL + "/admin/login", {
         userId: idOrEmail,
         password: password
@@ -75,38 +76,6 @@ export default function LoginForm() {
         return showErrorModal(adminLogin.data.message);
       }
 
-      // 아이디로 먼저 사용자 찾기
-      // const foundUser = admins.find((admin) => admin.userId === idOrEmail); 
-      // if (!foundUser) {
-      //   throw new Error("등록되지 않은 아이디입니다.");
-      // }
-      // // 비밀번호 확인
-      // if (foundUser.password !== password) {
-      //   throw new Error("비밀번호가 일치하지 않습니다.");
-      // }
-
-      // 거절 상태 체크 (거절 사유와 함께 표시)
-      // if (foundUser.rejected) {
-      //   const rejectionMessage = foundUser.rejectionReason
-      //     ? `가입 요청이 거절되었습니다.\n\n거절 사유:\n${foundUser.rejectionReason}\n\n문의사항이 있으시면 관리자에게 연락해주세요.`
-      //     : "가입 요청이 거절되었습니다.\n\n거절 사유가 기록되지 않았습니다.\n관리자에게 문의해주세요.";
-
-      //   showRejectionModal(rejectionMessage);
-      //   setLoading(false);
-      //   return;
-      // }
-
-      // 승인 대기 상태 체크
-      // if (!foundUser.approved) {
-      //   showErrorModal("관리자 승인 대기 중입니다.\n슈퍼관리자의 승인을 기다려주세요.");
-      //   setLoading(false);
-      //   return;
-      // }
-
-      // 로그인 성공 후 현재 사용자만 저장
-      // localStorage.setItem("currentAdmin", JSON.stringify(foundUser));
-
-      // 일반 관리자 대시보드로 이동
       setAdmin(adminLogin.data.data.data[0]);
       router.push("/admin/dashboard"); // window.location.href = "/admin/dashboard";
     } catch (error) {

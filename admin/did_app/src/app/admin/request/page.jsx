@@ -4,9 +4,9 @@ import Button from "@/components/UI/Button";
 import Modal from "@/components/UI/Modal";
 import LoadingSpinner from "@/components/UI/Spinner";
 import Input from "@/components/UI/Input";
-import { useAdminRequestStore } from "@/Store/useAdminStore";
+import { useAdminRequestStore, useIsSuperAdminStore, useStatusFilterStore, } from "@/Store/useAdminStore";
 import axios from "axios";
-import {  useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 // 요청 상태별 배지 스타일
 const getStatusBadge = (approved, rejected) => {
@@ -28,102 +28,136 @@ const getStatusText = (approved, rejected) => {
 export default function AdminRequestPage() {
   // const [requests, setRequests] = useState([]);
   const { requests, setRequests } = useAdminRequestStore();
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(null);
+  const { isSuperAdmin } = useIsSuperAdminStore();
+  const { statusFilter, setStatusFilter } = useStatusFilterStore();
 
-  // 확인 모달 상태
+  const [processing, setProcessing] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState("");
-
-  // 결과 모달 상태
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
-
-  // 거절 사유 입력 상태
   const [rejectionReason, setRejectionReason] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("pending");
   const [sortBy, setSortBy] = useState("newest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const queryClient = useQueryClient();
 
-
-  // 필터링 및 정렬
   useEffect(() => {
-    let filtered = [...requests];
-    console.log(requests, "requests in useEffect for filtering and sorting");
+    if (statusFilter !== 'approved') return;
+    const HandleApproved = async () => {
+      const { data } = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + '/admin/admins')
+      console.log(data, 'adminadmins');
+      console.log(statusFilter, 'statusfilter');
+      setRequests(data.data)
+    }
+    HandleApproved()
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (statusFilter !== 'rejected') return;
+    const HandleApproved = async () => {
+      const { data } = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + '/admin/rejectedadmins')
+      console.log(data, 'rejectedadmins');
+      setRequests(data.data)
+    }
+    HandleApproved()
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (statusFilter !== 'pending') return;
+    // This assumes there is a `useQuery` hook (likely in a parent component or custom hook)
+    // with the queryKey ['adminsInfo', isSuperAdmin] that fetches the list of admins.
+    // The query's fetch function should ideally use the `statusFilter` from the Zustand store
+    // to fetch the correct list (pending, approved, or rejected).
+    // Invalidating the query will trigger a refetch with the new filter.
+    queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+  }, [statusFilter]);
+
+  const filteredRequests = useMemo(() => {
+    let tempRequests = [...requests];
+
     // 검색 필터
     if (searchTerm.trim()) {
-      filtered = filtered.filter(request =>
-        request.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.company.toLowerCase().includes(searchTerm.toLowerCase())
+      const lowercasedTerm = searchTerm.toLowerCase();
+      tempRequests = tempRequests.filter(request =>
+        (request.userName?.toLowerCase().includes(lowercasedTerm)) ||
+        (request.userId?.toLowerCase().includes(lowercasedTerm)) ||
+        (request.company?.toLowerCase().includes(lowercasedTerm))
       );
     }
 
-    // 상태 필터
-    if (statusFilter !== "all") {
-      // filtered = filtered.filter(request => {
-      //   if (statusFilter === "pending") return !request.approved && !request.rejected;
-      //   if (statusFilter === "approved") return request.approved;
-      //   if (statusFilter === "rejected") return request.rejected;
-      //   return true;
-      // });
-
-      if (statusFilter === "approved") {
-        return;
-      }
-      // if (statusFilter === "rejected") return request.rejected;
-      // return true;
-    }
-
     // 정렬
-    filtered.sort((a, b) => {
+    tempRequests.sort((a, b) => {
       if (sortBy === "newest") {
         return new Date(b.createdAt) - new Date(a.createdAt);
       } else if (sortBy === "oldest") {
         return new Date(a.createdAt) - new Date(b.createdAt);
       } else if (sortBy === "name") {
-        return a.userName.localeCompare(b.userName);
-      } else if (sortBy === "company") {
-        return a.company.localeCompare(b.company);
+        return (a.userName || "").localeCompare(b.userName || "");
       }
       return 0;
     });
 
-    // setFilteredRequests(filtered);
+    return tempRequests;
+  }, [requests, searchTerm, sortBy]);
 
-    setFilteredRequests(requests);
-  }, [requests, searchTerm, statusFilter, sortBy]);
+  // 페이지네이션 로직
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const paginatedRequests = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredRequests.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredRequests, currentPage, itemsPerPage]);
 
-  // 통계 계산
-  const stats = useMemo(() => {
+  // 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm, sortBy]);
+
+  // 통계 상태
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0
+  });
+
+  // 통계 데이터 로드
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const { data } = await axios.get('https://api.sealiumback.store/admin/getalladminstotalnum');
+        const total = data.Totaladmins + data.TotalPendingAdmins + data.TotalRejectedAdmins;
+        const pending = data.TotalPendingAdmins;
+        const approved = data.Totaladmins;
+        const rejected = data.TotalRejectedAdmins;
+        console.log(data, total, pending, approved, rejected);
+        setStats({ total, pending, approved, rejected });
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+        // Fallback to local data if API fails
+        const total = requests.length;
+        const pending = requests.filter(r => !r.approved && !r.rejected).length;
+        const approved = requests.filter(r => r.approved).length;
+        const rejected = requests.filter(r => r.rejected).length;
+        setStats({ total, pending, approved, rejected });
+      }
+    };
+
+    loadStats();
     const total = requests.length;
     const pending = requests.filter(r => !r.approved && !r.rejected).length;
     const approved = requests.filter(r => r.approved).length;
     const rejected = requests.filter(r => r.rejected).length;
-    return { total, pending, approved, rejected };
+    setStats({ total, pending, approved, rejected });
   }, [requests]);
 
-  // const loadRequests = () => {
-  //   setLoading(true);
-  //   try {
-  //     const admins = JSON.parse(localStorage.getItem("admins") || "[]");
-  //     setRequests(admins);
-  //   } catch (error) {
-  //     console.error("요청 목록 로드 실패:", error);
-  //     setResultMessage("요청 목록을 불러오는 중 오류가 발생했습니다.");
-  //     setShowResultModal(true);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const closeConfirmModal = () => {
     setShowConfirmModal(false);
-    setActionType("");
+    // setActionType("");
     setSelectedRequest(null);
     setRejectionReason(""); // 거절 사유 초기화
   };
@@ -134,15 +168,21 @@ export default function AdminRequestPage() {
   };
 
   const handleAction = (request, action) => {
+    console.log(action, request, 'request')
     setSelectedRequest(request);
     setActionType(action);
     setShowConfirmModal(true);
   };
 
+  useEffect(() => {
+    console.log(actionType, 'actionty')
+  }, [actionType])
+
   const confirmAction = async () => {
     if (!selectedRequest || !actionType) return;
     const { birthDate, imgPath, nickName, password, userId, userName } = selectedRequest;
     // 거절 시 사유가 입력되지 않으면 경고
+    console.log(actionType, 'actiontype')
     if (actionType === "reject" && !rejectionReason.trim()) {
       alert("거절 사유를 입력해주세요.");
       return;
@@ -150,60 +190,42 @@ export default function AdminRequestPage() {
     setProcessing(selectedRequest.userId);
     try {
       console.log(selectedRequest, "selectedRequest before approve/reject");
-      const updateRequest = await axios.post(process.env.NEXT_PUBLIC_BASE_URL + "/admin", { birthDate, imgPath, nickName, password, userId, userName });
+
+      let updateRequest;
+      if (actionType === "approve") {
+        updateRequest = await axios.post(process.env.NEXT_PUBLIC_BASE_URL + "/admin", { birthDate, imgPath, nickName, password, userId, userName });
+      } else if (actionType === "reject") {
+        updateRequest = await axios.delete(process.env.NEXT_PUBLIC_BASE_URL + `/admin/rejectadmin`, { data: { userId } });
+      }
+
       console.log(updateRequest, "updateRequest after approve/reject");
-      setProcessing(null);
-      setShowConfirmModal(false);
+
+      // Invalidate the specific query with the correct key
+      queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+
+      setResultMessage(
+        actionType === "approve"
+          ? "가입이 승인되었습니다."
+          : `가입이 거절되었습니다.\n사유: ${rejectionReason}`
+      );
+      setShowResultModal(true);
+
     } catch (error) {
       console.error("처리 중 오류:", error);
       setResultMessage("처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      setShowResultModal(true);
+    } finally {
       setProcessing(null);
       setShowConfirmModal(false);
+      setSelectedRequest(null);
+      // setActionType("");
+      setRejectionReason("");
     }
 
-    queryClient.invalidateQueries({queryKey: ['adminsInfo']});
 
 
 
 
-
-    // try {
-    //   await new Promise(resolve => setTimeout(resolve, 800));
-
-    //   const admins = JSON.parse(localStorage.getItem("admins") || "[]");
-    //   const updatedAdmins = admins.map(admin => {
-    //     if (admin.userId === selectedRequest.userId) {
-    //       return {
-    //         ...admin,
-    //         approved: actionType === "approve",
-    //         rejected: actionType === "reject",
-    //         rejectionReason: actionType === "reject" ? rejectionReason.trim() : undefined,
-    //         processedAt: new Date().toISOString()
-    //       };
-    //     }
-    //     return admin;
-    //   });
-
-    //   localStorage.setItem("admins", JSON.stringify(updatedAdmins));
-    //   setRequests(updatedAdmins);
-
-    //   setResultMessage(
-    //     actionType === "approve" 
-    //       ? "가입이 승인되었습니다." 
-    //       : `가입이 거절되었습니다.\n사유: ${rejectionReason}`
-    //   );
-    //   setShowResultModal(true);
-
-    // } catch (error) {
-    //   console.error("처리 중 오류:", error);
-    //   setResultMessage("처리 중 오류가 발생했습니다. 다시 시도해주세요.");
-    //   setShowResultModal(true);
-    // } finally {
-    //   setProcessing(null);
-    //   setSelectedRequest(null);
-    //   setActionType("");
-    //   setRejectionReason("");
-    // }
   };
 
   const formatDate = (dateString) => {
@@ -225,8 +247,9 @@ export default function AdminRequestPage() {
   // }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className=" w-[calc(100wd - 64px) ] bg-lightbackblue overflow-hidden  pb-10  " >
+    <div className="min-h-screen ml-64 p-4 sm:p-6">
+      <div className="max-w-8xl px-12 mx-auto">
         {/* 헤더 */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">관리자 가입 요청 관리</h1>
@@ -235,27 +258,28 @@ export default function AdminRequestPage() {
 
         {/* 통계 카드 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">전체 요청</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+
+          <div className="bg-white p-4 text-center rounded-lg shadow">
+            <h3 className=" font-medium text-gray-500">전체 요청</h3>
+            <p className="text-2xl font-bold text-yellow-600">{stats.total}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">승인 대기</h3>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+          <div className="bg-white p-4 text-center rounded-lg shadow">
+            <h3 className=" font-medium text-gray-500">승인 대기</h3>
+            <p className="text-2xl font-bold text-blue-600">{stats.pending}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">승인됨</h3>
+          <div className="bg-white p-4 text-center rounded-lg shadow">
+            <h3 className=" font-medium text-gray-500">승인됨</h3>
             <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">거절됨</h3>
+          <div className="bg-white p-4 text-center rounded-lg shadow">
+            <h3 className=" font-medium text-gray-500">거절됨</h3>
             <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
           </div>
         </div>
 
         {/* 필터 및 검색 */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white p-4 px-10 rounded-lg shadow mb-6">
+          <div className="flex flex-col sm:flex-row gap-10">
             <div className="flex-1">
               <Input
                 placeholder="관리자명, 아이디, 회사명으로 검색..."
@@ -264,21 +288,21 @@ export default function AdminRequestPage() {
                 className="h-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-10">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="border border-gray-300 text-center rounded-lg w-50"
               >
                 {/* <option value="all">전체 상태</option> */}
-                <option value="pending">승인 대기</option>
+                <option value="pending"  >승인 대기</option>
                 <option value="approved">승인됨</option>
                 <option value="rejected">거절됨</option>
               </select>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="border border-gray-300 w-50 text-center rounded-lg  "
               >
                 <option value="newest">최신순</option>
                 <option value="oldest">오래된순</option>
@@ -294,36 +318,42 @@ export default function AdminRequestPage() {
           {filteredRequests.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               <p className="text-lg mb-2">가입 요청이 없습니다</p>
-              <p className="text-sm">새로운 관리자 가입 요청을 기다리고 있습니다.</p>
+              <p className="">새로운 관리자 가입 요청을 기다리고 있습니다.</p>
             </div>
           ) : (
             <div>
               {/* 헤더 */}
               <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div>관리자 정보</div>
-                  <div className="hidden md:block">회사명</div>
-                  <div className="hidden md:block">요청일시</div>
-                  <div className="hidden md:block">상태</div>
-                  <div className="hidden md:block text-right">작업</div>
+                <div className="grid grid-cols-1 md:grid-cols-[80px_130px_150px_1fr_80px_1fr_1fr_1fr] gap-4 text-left  font-bold text-gray-500 uppercase tracking-wider">
+                  <div className="text-center w-[80px]">번호</div>
+                  <div className="text-center ">이름</div>
+                  <div className="text-center ">아이디</div>
+                  <div className="text-center ">생년월일</div>
+                  <div className="text-center ">등급</div>
+                  <div className="hidden md:block text-center">회사명</div>
+                  <div className="hidden md:block text-center">요청일시</div>
+                  <div className="hidden md:block text-center">상태</div>
                 </div>
               </div>
 
               {/* 목록 */}
               <div className="divide-y divide-gray-200">
-                {filteredRequests.map((request) => (
+                {paginatedRequests.map((request, index) => (
                   <div key={request.userId} className="px-6 py-4 hover:bg-gray-50">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-[80px_130px_150px_1fr_80px_1fr_1fr_1fr] gap-4">
                       {/* 관리자 정보 */}
+                      <div className=" text-center font-medium text-gray-900">
+                        {index + 1}
+                      </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+
+                        <div className=" text-center font-medium text-gray-900">
                           {request.userName}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          ID: {request.userId}
-                        </div>
+
                         {/* 모바일에서 추가 정보 표시 */}
                         <div className="md:hidden mt-2 space-y-2">
+
                           <div className="text-xs text-gray-600">
                             회사: {request.company}
                           </div>
@@ -331,11 +361,11 @@ export default function AdminRequestPage() {
                             요청일: {formatDate(request.createdAt)}
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className={getStatusBadge(request.approved, request.rejected)}>
+                            <span className={getStatusBadge(request.grade)}>
                               {getStatusText(request.approved, request.rejected)}
                             </span>
                             {/* 거절 사유 버튼 (모바일) */}
-                            {request.rejected && request.rejectionReason && (
+                            {statusFilter === "rejected" && (
                               <button
                                 onClick={() => {
                                   setResultMessage(`거절 사유:\n${request.rejectionReason}`);
@@ -349,71 +379,7 @@ export default function AdminRequestPage() {
                           </div>
                           {/* 작업 버튼 (모바일) */}
                           <div className="flex gap-2">
-                            {!request.approved && !request.rejected && (
-                              <>
-                                <Button
-                                  onClick={() => handleAction(request, "approve")}
-                                  disabled={processing === request.userId}
-                                  className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded text-xs"
-                                >
-                                  {processing === request.userId ? (
-                                    <LoadingSpinner size="xs" />
-                                  ) : (
-                                    "승인"
-                                  )}
-                                </Button>
-                                <Button
-                                  onClick={() => handleAction(request, "reject")}
-                                  disabled={processing === request.userId}
-                                  className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded text-xs"
-                                >
-                                  거절
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* 회사명 - 데스크탑에서만 표시 */}
-                      <div className="hidden md:block">
-                        <div className="text-sm text-gray-900">{request.company}</div>
-                      </div>
-
-                      {/* 요청일시 - 데스크탑에서만 표시 */}
-                      <div className="hidden md:block">
-                        <div className="text-sm text-gray-900">
-                          {formatDate(request.createdAt)}
-                        </div>
-                      </div>
-
-                      {/* 상태 - 데스크탑에서만 표시 */}
-                      <div className="hidden md:block">
-                        <div>
-                          <span className={getStatusBadge(request.approved, request.rejected)}>
-                            {getStatusText(request.approved, request.rejected)}
-                          </span>
-                          {/* 거절된 경우 사유 표시 */}
-                          {request.rejected && request.rejectionReason && (
-                            <div className="mt-1">
-                              <button
-                                onClick={() => {
-                                  setResultMessage(`거절 사유:\n${request.rejectionReason}`);
-                                  setShowResultModal(true);
-                                }}
-                                className="text-xs text-red-600 hover:text-red-800 underline"
-                              >
-                                사유 보기
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 작업 - 데스크탑에서만 표시 */}
-                      <div className="hidden md:block">
-                        <div className="flex justify-end gap-2">
-                          {!request.approved && !request.rejected && (
                             <>
                               <Button
                                 onClick={() => handleAction(request, "approve")}
@@ -434,7 +400,61 @@ export default function AdminRequestPage() {
                                 거절
                               </Button>
                             </>
-                          )}
+
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 회사명 - 데스크탑에서만 표시 */}
+                      <div className="hidden md:block">
+                        <div className=" text-center text-gray-900">{request.userId}</div>
+                      </div>
+                      <div className="hidden md:block">
+                        <div className=" text-center text-gray-900">{request.birthDate}</div>
+                      </div>
+                      <div className="hidden md:block">
+                        <div className=" text-center text-gray-900">{request.grade === 2 ? <div>슈퍼 관리자</div> : <div>일반 관리자</div> }</div>
+                      </div>
+                      <div className="hidden md:block">
+                        <div className=" text-gray-900 text-center">경일게임IT 아카데미</div>
+                      </div>
+
+                      {/* 요청일시 - 데스크탑에서만 표시 */}
+                      <div className="hidden text-center md:block">
+                        <div className=" text-gray-900">
+                          {formatDate(request.createdAt)}
+                        </div>
+                      </div>
+
+                      {/* 상태 - 데스크탑에서만 표시 */}
+                      <div className="hidden text-center md:block">
+                        <div  >
+                        {statusFilter !== "rejected" ? <span >
+                            {statusFilter === "approved" ? <span className=" w-fit  text-white  p-2 px-8 bg-green-600 rounded-2xl">승인
+                            </span> : <div className="flex items-center gap-4 justify-center">
+                              <Button
+                                onClick={() => handleAction(request, "approve")}
+                                disabled={processing === request.userId}
+                                className="bg-green-100 text-green-800 hover:bg-green-200 px-6 py-2 rounded cursor-pointer"
+                              >
+                                {processing === request.userId ? (
+                                  <LoadingSpinner  />
+                                ) : (
+                                  "승인"
+                                )}
+                              </Button>
+                              <Button
+                                onClick={() => handleAction(request, "reject")}
+                                disabled={processing === request.userId}
+                                className="bg-red-100 text-red-800 hover:bg-red-200 px-8 py-2 rounded cursor-pointer "
+                              >
+                                거절
+                              </Button>
+                            </div> }
+                          </span> : <span className=" text-red-600 py-2 px-8 bg-amber-100 rounded-2xl">
+                                거절
+                          </span>
+                          }
                         </div>
                       </div>
                     </div>
@@ -444,6 +464,58 @@ export default function AdminRequestPage() {
             </div>
           )}
         </div>
+
+        {/* 페이지네이션 컨트롤 */}
+        {totalPages  && (
+          <div className="mt-12 flex flex-col  items-center">
+            <div className="flex justify-center items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2  rounded-lg disabled:opacity-50 text-black cursor-pointer disabled:cursor-not-allowed hover:bg-gray-50 "
+              >
+                이전
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-4 py-2 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
+                          ? 'bg-borderbackblue text-white '
+                          : ' hover:bg-gray-50'
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 cursor-pointer rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
+              >
+                다음
+              </button>
+            </div>
+       
+          </div>
+        )}
       </div>
 
       {/* 확인 모달 */}
@@ -463,7 +535,7 @@ export default function AdminRequestPage() {
           {/* 거절 시 사유 입력 필드 */}
           {actionType === "reject" && (
             <div className="mb-6">
-              <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="rejectionReason" className="block  font-medium text-gray-700 mb-2">
                 거절 사유 *
               </label>
               <textarea
@@ -520,5 +592,6 @@ export default function AdminRequestPage() {
         </div>
       </Modal>
     </div>
+  </div>
   );
 }

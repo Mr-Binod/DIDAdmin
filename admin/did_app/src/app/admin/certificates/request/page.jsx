@@ -2,22 +2,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Modal from '@/components/UI/Modal';
+import LoadingSpinner from "@/components/UI/Spinner";
+import Input from "@/components/UI/Input";
+import { useAdminInfoStore } from '@/Store/useAdminStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 export default function AdminCertificateRequestsPage() {
-  const router = useRouter();
-
   // 헤더용 사용자
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    const cu = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    if (cu) setUser(cu);
-  }, []);
-  const displayName = useMemo(
-    () => (user?.isKakaoUser ? user?.nickname : user?.name) || '관리자',
-    [user]
-  );
+  const { admin: user } = useAdminInfoStore();
+  const queryClient = useQueryClient();
 
   // 알림 (헤더에 주입) - 로컬스토리지 연동
   const [notifications, setNotifications] = useState([]);
@@ -38,13 +33,11 @@ export default function AdminCertificateRequestsPage() {
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState('all'); // all | issue | revoke
-  const [statusFilter, setStatusFilter] = useState('all'); // all | pending | approved | rejected
 
   // UI 상태들
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [userFilter, setUserFilter] = useState('all');
@@ -61,320 +54,120 @@ export default function AdminCertificateRequestsPage() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
 
-  // 요청 데이터 - 로컬스토리지 연동
-  const [issueRequests, setIssueRequests] = useState([]);
-  const [revokeRequests, setRevokeRequests] = useState([]);
+  // 데이터 fetching
+  const { data: allRequests = [], isLoading, isError } = useQuery({
+    queryKey: ['certificateRequests'],
+    queryFn: async () => {
+      const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequestlogs`);
+      return data.data || [];
+    },
+    refetchOnWindowFocus: true,
+  });
 
-  // 초기 로드 플래그 (선언 위치를 위로 올려 TDZ 이슈 해결)
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // 요청 처리 Mutation
+  const processRequestMutation = useMutation({
+    mutationFn: async ({ request, type, reason }) => {
+      // TODO: 실제 API 엔드포인트로 교체해야 합니다.
+      // 예시:
+      // if (type === 'approve') {
+      //   await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequests/${request.id}/approve`);
+      // } else {
+      //   await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/admin/vcrequests/${request.id}/reject`, { reason });
+      // }
+      console.log(`Simulating ${type} for request ID: ${request.id}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return { success: true };
+    },
+    onSuccess: (data, variables) => {
+      const { request, type } = variables;
+      queryClient.invalidateQueries({ queryKey: ['certificateRequests'] });
 
-  // 더미 데이터 초기화 함수 (한 번만 실행) - 대기중인 요청만
-  const initializeDummyData = () => {
-    const savedCertificateRequests = JSON.parse(localStorage.getItem('admin_certificate_requests') || '[]');
-    const savedRevokeRequests = JSON.parse(localStorage.getItem('admin_revoke_requests') || '[]');
+      const actionText = type === 'approve' ? '승인' : '거절';
+      const requestTypeText = getRequestTypeText(request.requestType);
+      pushNotif(
+        `요청 ${actionText} 완료`,
+        `${request.userName}님의 ${request.certificateName} ${requestTypeText} 요청이 ${actionText}되었습니다.`
+      );
 
-    // 더미 데이터가 이미 있는지 확인
-    const hasIssueData = savedCertificateRequests.length > 0;
-    const hasRevokeData = savedRevokeRequests.length > 0;
+      // 대시보드용 로컬스토리지 업데이트
+      const processedRequest = {
+        ...request,
+        action: type === 'approve' ? 'approved' : 'rejected',
+        processedAt: new Date().toISOString(),
+        processReason: type === 'reject' ? processReason : null,
+        processedBy: user?.name || user?.nickname || '관리자',
+      };
+      const existingProcessed = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
+      const updatedProcessed = [processedRequest, ...existingProcessed].slice(0, 50);
+      localStorage.setItem('admin_processed_requests', JSON.stringify(updatedProcessed));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'admin_processed_requests', newValue: JSON.stringify(updatedProcessed) }));
 
-    // 더미 데이터가 없는 경우에만 추가 (대기중인 요청만)
-    if (!hasIssueData) {
-      const dummyIssueRequests = [
-        {
-          id: Date.now() - 1000,
-          userId: 'user001',
-          userName: '김철수',
-          userEmail: 'kimcs@email.com',
-          certificateName: '블록체인 기초 과정 수료증',
-          certificateId: 'CERT-BLOCKCHAIN-001',
-          reason:
-            '이직을 준비 중인데, 블록체인 분야 전문성을 어필하기 위해 수료증이 필요합니다. 특히 핀테크 회사 지원을 위해 꼭 필요한 자격증명서입니다.',
-          requestedAt: '2025-08-28T10:30:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 2000,
-          userId: 'user002',
-          userName: '박영희',
-          userEmail: 'park.yh@email.com',
-          certificateName: 'React 프론트엔드 개발 과정 수료증',
-          certificateId: 'CERT-REACT-002',
-          reason:
-            '프리랜서 개발자로 활동하면서 클라이언트들에게 제출할 포트폴리오와 함께 전문성을 증명할 수 있는 자료로 활용하고 싶습니다.',
-          requestedAt: '2025-08-27T14:20:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 3000,
-          userId: 'user003',
-          userName: '이민호',
-          userEmail: 'lee.mh@email.com',
-          certificateName: 'AI/ML 기초 과정 수료증',
-          certificateId: 'CERT-AI-003',
-          reason:
-            '대학원 진학을 위한 자기소개서 작성 시 AI 분야 학습 경험을 증명하는 자료로 사용하고 싶습니다. 인공지능학과 대학원 입학에 도움이 될 것 같습니다.',
-          requestedAt: '2025-08-26T09:15:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 4000,
-          userId: 'user004',
-          userName: '정수진',
-          userEmail: 'jung.sj@email.com',
-          certificateName: 'Node.js 백엔드 개발 과정 수료증',
-          certificateId: 'CERT-NODE-004',
-          reason:
-            '회사에서 연말 승진 심사를 앞두고 있는데, 개인적으로 학습한 기술 스택에 대한 공식적인 증명서가 필요합니다. 승진 평가 시 자기계발 노력을 어필하고 싶습니다.',
-          requestedAt: '2025-08-25T16:45:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 5000,
-          userId: 'user005',
-          userName: '최동욱',
-          userEmail: 'choi.dw@email.com',
-          certificateName: 'DeFi 고급 과정 수료증',
-          certificateId: 'CERT-DEFI-005',
-          reason:
-            '블록체인 스타트업 창업을 준비하고 있어서 투자자들과 파트너들에게 DeFi 분야 전문성을 증명할 수 있는 자료가 필요합니다.',
-          requestedAt: '2025-08-28T08:15:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 6000,
-          userId: 'user006',
-          userName: '윤하늘',
-          userEmail: 'yoon.sky@email.com',
-          certificateName: '웹 보안 전문가 과정 수료증',
-          certificateId: 'CERT-SEC-006',
-          reason: '사내 보안 담당자로서 직무 전문성 인증이 필요합니다.',
-          requestedAt: '2025-08-24T11:10:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 7000,
-          userId: 'user007',
-          userName: '김나연',
-          userEmail: 'kim.ny@email.com',
-          certificateName: 'UX/UI 디자인 과정 수료증',
-          certificateId: 'CERT-UX-007',
-          reason: '포트폴리오와 함께 제출할 공식 증빙 자료가 필요합니다.',
-          requestedAt: '2025-08-23T09:40:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 8000,
-          userId: 'user008',
-          userName: '박준형',
-          userEmail: 'park.jh@email.com',
-          certificateName: '클라우드 아키텍처 과정 수료증',
-          certificateId: 'CERT-CLOUD-008',
-          reason: '클라우드 아키텍트 포지션 지원 시 학습 증명에 사용하려 합니다.',
-          requestedAt: '2025-08-22T15:25:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 9000,
-          userId: 'user009',
-          userName: '장서현',
-          userEmail: 'jang.sh@email.com',
-          certificateName: '데이터 분석 기초 과정 수료증',
-          certificateId: 'CERT-DATA-009',
-          reason: '데이터 관련 직무 이직 준비를 위한 증빙입니다.',
-          requestedAt: '2025-08-21T13:50:00.000Z',
-          status: 'pending',
-        },
-        {
-          id: Date.now() - 10000,
-          userId: 'user010',
-          userName: '홍길동',
-          userEmail: 'hong.gd@email.com',
-          certificateName: '스마트 컨트랙트 전문가 과정 수료증',
-          certificateId: 'CERT-SMART-010',
-          reason: '블록체인 전문 인력으로 이직하기 위해 필요합니다.',
-          requestedAt: '2025-08-20T18:00:00.000Z',
-          status: 'pending',
-        },
-      ];
-      localStorage.setItem('admin_certificate_requests', JSON.stringify(dummyIssueRequests));
-      setIssueRequests(dummyIssueRequests);
-    } else {
-      setIssueRequests(savedCertificateRequests);
-    }
+      closeProcessModal();
+    },
+    onError: (error, variables) => {
+      console.error("Error processing request:", error);
+      const actionText = variables.type === 'approve' ? '승인' : '거절';
+      showWarning(`${actionText} 처리 중 오류가 발생했습니다. 다시 시도해주세요.`);
+    },
+  });
 
-    if (!hasRevokeData) {
-      const dummyRevokeRequests = [
-      {
-        id: Date.now() - 11000,
-        userId: 'user006',
-        userName: '김하늘',
-        userEmail: 'kim.hn@email.com',
-        certificateName: '블록체인 기초 과정 수료증',
-        certificateId: 'CERT-BLOCKCHAIN-001',
-        reason: '개인정보 보호를 위해 이전 수료증을 삭제하고 싶습니다.',
-        requestedAt: '2025-08-27T11:10:00.000Z',
-        status: 'pending'
-      },
-      {
-        id: Date.now() - 12000,
-        userId: 'user007',
-        userName: '이도현',
-        userEmail: 'lee.dh@email.com',
-        certificateName: 'React 프론트엔드 개발 과정 수료증',
-        certificateId: 'CERT-REACT-002',
-        reason: '새로운 수료증을 발급받아서 이전 것을 폐기 요청합니다.',
-        requestedAt: '2025-08-26T15:25:00.000Z',
-        status: 'pending'
-      },
-      {
-        id: Date.now() - 13000,
-        userId: 'user013',
-        userName: '박민지',
-        userEmail: 'park.mj@email.com',
-        certificateName: 'AI/ML 기초 과정 수료증',
-        certificateId: 'CERT-AI-003',
-        reason: '학습 과정 중단으로 수료증 삭제를 요청합니다.',
-        requestedAt: '2025-08-25T09:30:00.000Z',
-        status: 'pending'
-      },
-      {
-        id: Date.now() - 14000,
-        userId: 'user014',
-        userName: '정우성',
-        userEmail: 'jung.ws@email.com',
-        certificateName: 'Node.js 백엔드 개발 과정 수료증',
-        certificateId: 'CERT-NODE-004',
-        reason: '수정된 이름으로 새 수료증 발급 예정입니다.',
-        requestedAt: '2025-08-24T14:00:00.000Z',
-        status: 'pending'
-      },
-      {
-        id: Date.now() - 15000,
-        userId: 'user015',
-        userName: '한지민',
-        userEmail: 'han.jm@email.com',
-        certificateName: 'DeFi 고급 과정 수료증',
-        certificateId: 'CERT-DEFI-005',
-        reason: '불필요한 인증서 폐기 요청합니다.',
-        requestedAt: '2025-08-23T16:45:00.000Z',
-        status: 'pending'
-      },
-      {
-        id: Date.now() - 16000,
-        userId: 'user016',
-        userName: '윤아라',
-        userEmail: 'yoon.ar@email.com',
-        certificateName: '웹 보안 전문가 과정 수료증',
-        certificateId: 'CERT-SEC-006',
-        reason: '개인정보 보호 차원에서 폐기 요청합니다.',
-        requestedAt: '2025-08-22T12:20:00.000Z',
-        status: 'pending'
-      }
-    ];
-      localStorage.setItem('admin_revoke_requests', JSON.stringify(dummyRevokeRequests));
-      setRevokeRequests(dummyRevokeRequests);
-    } else {
-      setRevokeRequests(savedRevokeRequests);
-    }
-  };
-
-  // 데이터 로드 함수 (새로고침용)
-  const loadData = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const savedCertificateRequests = JSON.parse(localStorage.getItem('admin_certificate_requests') || '[]');
-      const savedRevokeRequests = JSON.parse(localStorage.getItem('admin_revoke_requests') || '[]');
-
-      setIssueRequests(savedCertificateRequests);
-      setRevokeRequests(savedRevokeRequests);
-
-      setIsLoading(false);
-    }, 800);
-  };
-
-  // 초기 로드 (더미 데이터 초기화)
-  useEffect(() => {
-    initializeDummyData();
-    setIsInitialLoad(false);
-  }, []);
-
-  // 페이지에 포커스될 때마다 데이터 새로고침
-  useEffect(() => {
-    const handleFocus = () => {
-      loadData();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  // 요청 데이터 변경 시 로컬스토리지 저장
-  useEffect(() => {
-    if (!isInitialLoad) {
-      localStorage.setItem('admin_certificate_requests', JSON.stringify(issueRequests));
-    }
-  }, [issueRequests, isInitialLoad]);
-
-  useEffect(() => {
-    if (!isInitialLoad) {
-      localStorage.setItem('admin_revoke_requests', JSON.stringify(revokeRequests));
-    }
-  }, [revokeRequests, isInitialLoad]);
+  // 데이터 가공
+  const pendingRequests = useMemo(() => {
+    return allRequests.filter((req) => req.status === 'pending');
+  }, [allRequests]);
 
   // 현재 탭에 따른 데이터 - 대기중인 요청만 필터링
   const currentRequests = useMemo(() => {
-    // 대기중인 요청만 필터링
-    const pendingIssueRequests = issueRequests.filter((req) => req.status === 'pending');
-    const pendingRevokeRequests = revokeRequests.filter((req) => req.status === 'pending');
-
     if (activeTab === 'all') {
-      // 전체: 대기중인 발급과 폐기 요청을 합치고 타입 정보 추가
-      const allIssueRequests = pendingIssueRequests.map((req) => ({ ...req, requestType: 'issue' }));
-      const allRevokeRequests = pendingRevokeRequests.map((req) => ({ ...req, requestType: 'revoke' }));
-      return [...allIssueRequests, ...allRevokeRequests];
+      return pendingRequests;
     } else if (activeTab === 'issue') {
-      return pendingIssueRequests.map((req) => ({ ...req, requestType: 'issue' }));
+      return pendingRequests.filter((req) => req.requestType === 'issue');
     } else {
-      return pendingRevokeRequests.map((req) => ({ ...req, requestType: 'revoke' }));
+      return pendingRequests.filter((req) => req.requestType === 'revoke');
     }
-  }, [activeTab, issueRequests, revokeRequests]);
+  }, [activeTab, pendingRequests]);
 
   // 사용자 목록 (필터용)
   const users = [...new Set(currentRequests.map((req) => req.userName))];
 
   // 필터링 및 정렬
   const filteredAndSortedRequests = useMemo(() => {
-    let filtered = currentRequests.filter((req) => {
+    let filtered = currentRequests;
+
+    if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
+      filtered = filtered.filter(req =>
         (req.certificateName && req.certificateName.toLowerCase().includes(searchLower)) ||
         (req.certificateId && req.certificateId.toLowerCase().includes(searchLower)) ||
         (req.userName && req.userName.toLowerCase().includes(searchLower)) ||
-        (req.userEmail && req.userEmail.toLowerCase().includes(searchLower));
-      const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
-      const matchesUser = userFilter === 'all' || req.userName === userFilter;
+        (req.userEmail && req.userEmail.toLowerCase().includes(searchLower))
+      );
+    }
 
-      // 날짜 필터링
-      if (dateRange.start || dateRange.end) {
+    if (userFilter !== 'all') {
+      filtered = filtered.filter(req => req.userName === userFilter);
+    }
+
+    if (dateRange.start || dateRange.end) {
+      filtered = filtered.filter(req => {
         const reqDate = new Date(req.requestedAt);
         if (dateRange.start && reqDate < new Date(dateRange.start)) return false;
         if (dateRange.end && reqDate > new Date(dateRange.end)) return false;
-      }
-
-      return matchesSearch && matchesStatus && matchesUser;
-    });
+        return true;
+      });
+    }
 
     return filtered.sort((a, b) => {
       const aValue = new Date(a.requestedAt);
       const bValue = new Date(b.requestedAt);
 
       if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
+        return aValue - bValue;
       } else {
-        return aValue < bValue ? 1 : -1;
+        return bValue - aValue;
       }
     });
-  }, [currentRequests, searchTerm, statusFilter, userFilter, dateRange, sortOrder]);
+  }, [currentRequests, searchTerm, userFilter, dateRange, sortOrder]);
 
   // 페이지네이션을 위한 데이터 처리
   const totalPages = Math.ceil(filteredAndSortedRequests.length / itemsPerPage);
@@ -385,22 +178,13 @@ export default function AdminCertificateRequestsPage() {
 
   // 통계 계산 - 대기중인 요청만 계산
   const stats = useMemo(() => {
-    // 대기중인 요청만 필터링
-    const pendingIssueRequests = issueRequests.filter((req) => req.status === 'pending');
-    const pendingRevokeRequests = revokeRequests.filter((req) => req.status === 'pending');
-    const allPendingRequests = [...pendingIssueRequests, ...pendingRevokeRequests];
+    const total = pendingRequests.length;
+    const issueCount = pendingRequests.filter((req) => req.requestType === 'issue').length;
+    const revokeCount = pendingRequests.filter((req) => req.requestType === 'revoke').length;
+    return { total, issueCount, revokeCount };
+  }, [pendingRequests]);
 
-    const total = allPendingRequests.length;
-    const pending = total; // 모든 요청이 대기중
-    const approved = 0; // 승인된 요청은 표시하지 않음
-    const rejected = 0; // 거절된 요청은 표시하지 않음
-
-    // 탭별 카운트 - 대기중인 것만
-    const issueCount = pendingIssueRequests.length;
-    const revokeCount = pendingRevokeRequests.length;
-
-    return { total, pending, approved, rejected, issueCount, revokeCount };
-  }, [issueRequests, revokeRequests]);
+  useEffect(() => setCurrentPage(1), [activeTab, searchTerm, sortOrder, userFilter, dateRange]);
 
   // 상태별 스타일
   const getStatusBadge = (status) => {
@@ -482,7 +266,7 @@ export default function AdminCertificateRequestsPage() {
     setWarningMessage('');
   };
 
- // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
+  // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
   const confirmProcessRequest = () => {
     if (!requestToProcess) return;
 
@@ -492,59 +276,11 @@ export default function AdminCertificateRequestsPage() {
       return;
     }
 
-    const processedAt = new Date().toISOString();
-    const action = processType === 'approve' ? 'approved' : 'rejected';
-
-    // 처리된 요청 정보를 대시보드용으로 저장
-    const processedRequest = {
-      ...requestToProcess,
-      action: action,
-      processedAt: processedAt,
-      processReason: processType === 'reject' ? processReason : null,
-      processedBy: user?.name || user?.nickname || '관리자'
-    };
-
-    // 기존 처리된 요청 목록 가져오기
-    const existingProcessed = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-    
-    // 새로운 처리된 요청을 맨 앞에 추가
-    const updatedProcessed = [processedRequest, ...existingProcessed];
-    
-    // 로컬스토리지에 저장 (최대 50개까지만 보관)
-    localStorage.setItem('admin_processed_requests', JSON.stringify(updatedProcessed.slice(0, 50)));
-
-    // 기존 대기중 목록에서 제거
-    if (requestToProcess.requestType === 'issue') {
-      setIssueRequests((prev) => prev.filter((req) => req.id !== requestToProcess.id));
-    } else {
-      setRevokeRequests((prev) => prev.filter((req) => req.id !== requestToProcess.id));
-    }
-
-    // 알림 생성
-    if (processType === 'approve') {
-      pushNotif(
-        '요청 승인 완료',
-        `${requestToProcess.userName}님의 ${requestToProcess.certificateName} ${getRequestTypeText(
-          requestToProcess.requestType
-        )} 요청이 승인되었습니다.`
-      );
-    } else {
-      pushNotif(
-        '요청 거절 완료',
-        `${requestToProcess.userName}님의 ${requestToProcess.certificateName} ${getRequestTypeText(
-          requestToProcess.requestType
-        )} 요청이 거절되었습니다.`
-      );
-    }
-
-    // storage 이벤트 발생시켜서 대시보드 실시간 업데이트
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'admin_processed_requests',
-      newValue: JSON.stringify(updatedProcessed.slice(0, 50))
-    }));
-
-    // 모달 닫기
-    closeProcessModal();
+    processRequestMutation.mutate({
+      request: requestToProcess,
+      type: processType,
+      reason: processReason,
+    });
   };
 
   // 스켈레톤 로더
@@ -565,10 +301,26 @@ export default function AdminCertificateRequestsPage() {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <LoadingSpinner message="요청 목록을 불러오는 중..." size="lg" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <p className="text-red-500">데이터를 불러오는 중 오류가 발생했습니다.</p>
+      </div>
+    );
+  }
+
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className=" w-[calc(100wd - 64px) ] ml-64 mx-auto bg-lightbackblue p-4 overflow-hidden  pb-10  ">
+        <div className="w-[calc(100wd - 64px) ] min-h-screen mx-auto lg:px-12 px-6 py-6">
           {/* 상단 헤더 */}
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">수료증 요청 관리</h1>
@@ -577,15 +329,15 @@ export default function AdminCertificateRequestsPage() {
 
           {/* 통계 카드 - 대기중 요청만 표시 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
               <div className="text-sm text-gray-500">전체 대기중 요청</div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-blue-600">{stats.issueCount}</div>
               <div className="text-sm text-gray-500">발급 대기중</div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
               <div className="text-2xl font-bold text-purple-600">{stats.revokeCount}</div>
               <div className="text-sm text-gray-500">폐기 대기중</div>
             </div>
@@ -600,33 +352,30 @@ export default function AdminCertificateRequestsPage() {
                     setActiveTab('all');
                     setCurrentPage(1);
                   }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
                 >
-                  전체 요청 ({stats.total})
+                  전체 요청 ({stats.total || 0})
                 </button>
                 <button
                   onClick={() => {
                     setActiveTab('issue');
                     setCurrentPage(1);
                   }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'issue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'issue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
                 >
-                  발급 요청 ({stats.issueCount})
+                  발급 요청 ({stats.issueCount || 0})
                 </button>
                 <button
                   onClick={() => {
                     setActiveTab('revoke');
                     setCurrentPage(1);
                   }}
-                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'revoke' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'revoke' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
                 >
-                  폐기 요청 ({stats.revokeCount})
+                  폐기 요청 ({stats.revokeCount || 0})
                 </button>
               </nav>
             </div>
@@ -638,7 +387,7 @@ export default function AdminCertificateRequestsPage() {
               {/* 검색 및 액션 */}
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="flex-1">
-                  <input
+                  <Input
                     type="text"
                     placeholder="수료증명, 사용자명, 이메일 검색..."
                     value={searchTerm}
@@ -649,9 +398,8 @@ export default function AdminCertificateRequestsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`px-4 py-2 border rounded-lg transition-colors ${
-                      showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`px-4 py-2 border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                      }`}
                   >
                     필터
                   </button>
@@ -661,9 +409,9 @@ export default function AdminCertificateRequestsPage() {
                   >
                     {sortOrder === 'asc' ? '오래된순' : '최신순'}
                   </button>
-                  <button onClick={loadData} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  {/* <button onClick={loadData} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                     새로고침
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -712,12 +460,14 @@ export default function AdminCertificateRequestsPage() {
               <div className="flex flex-wrap gap-2 mt-4">
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    statusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${statusFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
-                  전체 대기중 ({stats.total})
+                  전체 대기중 ({stats.total || 0})
                 </button>
+                <div className="px-4 py-2 rounded-full text-sm font-medium bg-blue-500 text-white">
+                  전체 대기중 ({stats.total || 0}) 
+                </div>
               </div>
             </div>
           </div>
@@ -733,7 +483,7 @@ export default function AdminCertificateRequestsPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-2">요청 내역이 없습니다</h3>
               <p className="text-gray-500 mb-6">
-                {searchTerm || statusFilter !== 'all'
+                {searchTerm
                   ? '검색 조건에 맞는 요청이 없어요.'
                   : `아직 ${activeTab === 'all' ? '' : activeTab === 'issue' ? '발급' : '폐기'} 요청이 없어요.`}
               </p>
@@ -748,28 +498,23 @@ export default function AdminCertificateRequestsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{request.certificateName}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {request.certificateName}
+                        </h3>
                         {activeTab === 'all' && (
-                          <span className={getRequestTypeBadge(request.requestType)}>{getRequestTypeText(request.requestType)}</span>
+                          <span className={getRequestTypeBadge(request.requestType)}>
+                            {getRequestTypeText(request.requestType)}
+                          </span>
                         )}
-                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">대기중</span>
+                        <span className={getStatusBadge(request.status)}>
+                          {getStatusText(request.status)}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
-                        <div>
-                          <span className="text-gray-500">요청자:</span>
-                          <span className="ml-2 text-gray-900 font-medium">{request.userName}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">이메일:</span>
-                          <span className="ml-2 text-gray-900 font-medium">{request.userEmail}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">요청일:</span>
-                          <span className="ml-2 text-gray-900 font-medium">
-                            {new Date(request.requestedAt).toLocaleDateString('ko-KR')}
-                          </span>
-                        </div>
+                        <div><span className="text-gray-500">요청자:</span> <span className="ml-2 text-gray-900 font-medium">{request.userName}</span></div>
+                        <div><span className="text-gray-500">이메일:</span> <span className="ml-2 text-gray-900 font-medium">{request.userEmail}</span></div>
+                        <div><span className="text-gray-500">요청일:</span> <span className="ml-2 text-gray-900 font-medium">{new Date(request.requestedAt).toLocaleDateString('ko-KR')}</span></div>
                       </div>
 
                       <div className="mb-3">
@@ -777,14 +522,9 @@ export default function AdminCertificateRequestsPage() {
                         <p className="mt-1 text-gray-900 text-sm">{request.reason}</p>
                       </div>
 
-                      {request.adminNote && (
-                        <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                          <span className="text-gray-500 text-sm">메모:</span>
-                          <p className="mt-1 text-gray-900 text-sm">{request.adminNote}</p>
-                        </div>
+                      {request.certificateId && (
+                        <div className="text-xs text-gray-500">수료증 ID: {request.certificateId}</div>
                       )}
-
-                      {request.certificateId && <div className="text-xs text-gray-500">수료증 ID: {request.certificateId}</div>}
                     </div>
 
                     <div className="flex flex-col gap-2 ml-6">
@@ -835,9 +575,8 @@ export default function AdminCertificateRequestsPage() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 border rounded-lg text-sm ${
-                        currentPage === pageNum ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-3 py-2 border rounded-lg text-sm ${currentPage === pageNum ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       {pageNum}
                     </button>
@@ -855,20 +594,14 @@ export default function AdminCertificateRequestsPage() {
             </div>
           )}
 
-          {/* 정보 표시 */}
-          {filteredAndSortedRequests.length > 0 && (
-            <div className="text-center mt-4">
-              <p className="text-gray-500 text-sm">
-                총 {filteredAndSortedRequests.length}개 중 {Math.min(currentPage * itemsPerPage, filteredAndSortedRequests.length)}개 표시 중
-              </p>
-            </div>
-          )}
+
         </div>
       </main>
 
       {/* 처리 확인 모달 */}
-      <Modal isOpen={showProcessModal} onClose={closeProcessModal} title={`요청 ${processType === 'approve' ? '승인' : '거절'}`} size="md">
+      <Modal isOpen={showProcessModal} onClose={closeProcessModal}>
         <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
           <div className="mb-4">
             <p className="text-gray-700 font-medium mb-2">수료증:</p>
             <p className="text-sm text-gray-600">{requestToProcess?.certificateName}</p>
@@ -910,19 +643,19 @@ export default function AdminCertificateRequestsPage() {
             </button>
             <button
               onClick={confirmProcessRequest}
-              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors font-medium ${
-                processType === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
-              }`}
+              disabled={processRequestMutation.isPending}
+              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors font-medium ${processType === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} disabled:bg-gray-400`}
             >
-              {processType === 'approve' ? '승인 확정' : '거절 확정'}
+              {processRequestMutation.isPending ? <LoadingSpinner size="sm" showMessage={false} /> : (processType === 'approve' ? '승인 확정' : '거절 확정')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* 경고 모달 */}
-      <Modal isOpen={showWarningModal} onClose={closeWarningModal} title="알림" size="sm">
+      <Modal isOpen={showWarningModal} onClose={closeWarningModal}>
         <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">알림</h3>
           <p className="text-gray-700 mb-6 text-center">{warningMessage}</p>
 
           <button

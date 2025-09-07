@@ -15,3 +15,13 @@ export const useIsSuperAdminStore = create((set) => ({
     isSuperAdmin : false,
     setIsSuperAdmin : (newValue) => set(() => ({ isSuperAdmin: newValue }))    
 }));
+
+export const useStatusFilterStore = create((set) => ({
+    statusFilter : "pending",
+    setStatusFilter : (newValue) => set(() => ({statusFilter : newValue}))
+}))
+
+export const useApprovedAdminsStore = create((set) => ({
+    admins : [],
+    setAdmins : (newAdmins) => set(() => ({ admins: newAdmins }))
+}));

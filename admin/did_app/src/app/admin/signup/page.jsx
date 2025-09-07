@@ -159,7 +159,7 @@ export default function AdminSignupForm() {
       // const admins = JSON.parse(localStorage.getItem("admins") || "[]");
       // const isAvailable = !admins.some((admin) => admin.userId === trimmedId);
       console.log(process.env.NEXT_PUBLIC_BASE_URL + `/admins/${trimmedId}`);
-      const admin = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + `/admin/${trimmedId}`);
+      const admin = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + `/admin/find/${trimmedId}`);
       console.log(admin, 'admin');  
 
       
