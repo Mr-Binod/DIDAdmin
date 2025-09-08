@@ -21,7 +21,3 @@ export const useStatusFilterStore = create((set) => ({
     setStatusFilter : (newValue) => set(() => ({statusFilter : newValue}))
 }))
 
-export const useApprovedAdminsStore = create((set) => ({
-    admins : [],
-    setAdmins : (newAdmins) => set(() => ({ admins: newAdmins }))
-}));

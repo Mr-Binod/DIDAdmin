@@ -14,6 +14,15 @@ export default function DashboardContent() {
   const router = useRouter();
   // const [admin, setAdmin] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalStats, setTotalStats] = useState({
+    pendingCount : 0,
+    approvedCount : 0,
+    rejectedCount : 0,
+    revokedCount : 0,
+  })
+
   const [stats, setStats] = useState({
     // 슈퍼관리자용 통계
     totalInstitutions: 0,
@@ -44,31 +53,16 @@ export default function DashboardContent() {
 
   useEffect(() => {
     console.log("Admin state updated:", admin);
+    const TotalUserAndAdminsData = async() =>  {
+      const TotalUserAndAdmins = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/gettotaluna")
+      console.log(TotalUserAndAdmins, 'TotalUserAndAdmins')
+      setTotalAdmins(TotalUserAndAdmins.data.totalAdmins)
+      setTotalUsers(TotalUserAndAdmins.data.totalUsers)
+    }
+    TotalUserAndAdminsData()
     setIsSuperAdmin(admin?.grade === 2);
   }, [admin]);
 
-  useEffect(() => {
-    console.log("isSuperAdmin state updated:", isSuperAdmin);
-  }, [isSuperAdmin]);
-
-  // 관리자 데이터 로드
-  // useEffect(() => {
-  //   const currentAdmin = JSON.parse(
-  //     localStorage.getItem("currentAdmin") || "null"
-  //   );
-
-  //   if (!currentAdmin) { 
-  //     router.push("/admin");
-  //   } else {
-  //     setAdmin(currentAdmin);
-  //     loadDashboardStats(currentAdmin);
-
-  //     const savedNotifications = JSON.parse(
-  //       localStorage.getItem("adminNotifications") || "[]"
-  //     );
-  //     setNotifications(savedNotifications);
-  //   }
-  // }, [router]);
 
   // 페이지가 다시 포커스될 때 데이터 새로고침
   useEffect(() => {
@@ -85,9 +79,9 @@ export default function DashboardContent() {
   // storage 이벤트 감지하여 실시간 업데이트
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'admin_processed_requests' && admin) {
-        loadRecentProcessed();
-      }
+      // if (e.key === 'admin_processed_requests' && admin) {
+      //   loadRecentProcessed();
+      // }
       if ((e.key === 'admin_certificate_requests' || e.key === 'admin_revoke_requests') && admin) {
         loadDashboardStats(admin);
       }
@@ -104,13 +98,13 @@ export default function DashboardContent() {
     // 상태 필터 적용
     if (activeFilter === 'approved') {
       filtered = filtered.filter(req =>
-        req.action === 'approved' && req.requestType === 'issue'
+        req.status === 'approved' 
       );
     } else if (activeFilter === 'rejected') {
-      filtered = filtered.filter(req => req.action === 'rejected');
+      filtered = filtered.filter(req => req.status === 'rejected');
     } else if (activeFilter === 'revoked') {
       filtered = filtered.filter(req =>
-        req.action === 'approved' && req.requestType === 'revoke'
+        req.status === 'approved' && req.request === 'revoke'
       );
     }
 
@@ -120,7 +114,7 @@ export default function DashboardContent() {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       filtered = filtered.filter(req => {
-        const processedDate = new Date(req.processedAt || req.requestedAt);
+        const processedDate = new Date(req.createdAt);
 
         if (dateFilter === 'today') {
           return processedDate >= today;
@@ -151,86 +145,95 @@ export default function DashboardContent() {
     setCurrentPage(1); // 필터링/검색 시 페이지를 1로 리셋
   }, [recentProcessed, activeFilter, searchQuery, dateFilter]);
 
-  const loadDashboardStats = (adminData) => {
-    if (adminData.role === "SUPER_ADMIN") {
-      const institutions = JSON.parse(localStorage.getItem("institutions") || "[]");
-      const admins = JSON.parse(localStorage.getItem("admins") || "[]");
-      const certificates = JSON.parse(localStorage.getItem("certificates") || "[]");
+  const loadDashboardStats = () => {
+    // if (adminData.role === "SUPER_ADMIN") {
+    //   const institutions = JSON.parse(localStorage.getItem("institutions") || "[]");
+    //   const admins = JSON.parse(localStorage.getItem("admins") || "[]");
+    //   const certificates = JSON.parse(localStorage.getItem("certificates") || "[]");
 
-      setStats((prev) => ({
+    //   setStats((prev) => ({
+    //     ...prev,
+    //     totalInstitutions: institutions.length,
+    //     totalAdmins: admins.length,
+    //     pendingAdmins: admins.filter((admin) => !admin.approved).length,
+    //     totalCertificates: certificates.length,
+    //     todayIssued: certificates.filter(
+    //       (cert) =>
+    //         new Date(cert.issuedAt).toDateString() === new Date().toDateString()
+    //     ).length,
+    //     monthlyIssued: certificates.filter(
+    //       (cert) => new Date(cert.issuedAt).getMonth() === new Date().getMonth()
+    //     ).length,
+    //   }));
+    // } else {
+    //   const certificates = JSON.parse(localStorage.getItem("certificates") || "[]");
+    //   const myCerts = certificates.filter(
+    //     (cert) => cert.issuerId === adminData.userId
+    //   );
+
+      // const issueRequests = JSON.parse(localStorage.getItem("admin_certificate_requests") || "[]");
+      // const revokeRequests = JSON.parse(localStorage.getItem("admin_revoke_requests") || "[]");
+      // // const pendingCount = issueRequests.filter(req => req.status === 'pending').length +
+      //   revokeRequests.filter(req => req.status === 'pending').length;
+
+      // const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
+    console.log(recentProcessed, '111recentProcessed')
+      const approvedCount = recentProcessed.filter(req => req.status === 'approved').length;
+      const rejectedCount = recentProcessed.filter(req => req.status === 'rejected').length;
+      const pendingCount = recentProcessed.filter(req => req.status === 'approved' && req.request === 'issue').length;
+      const revokedCount = recentProcessed.filter(req => req.status === 'approved' && req.request === 'revoke').length;
+      console.log(pendingCount, rejectedCount, revokedCount, rejectedCount)
+      setTotalStats((prev) => ({
         ...prev,
-        totalInstitutions: institutions.length,
-        totalAdmins: admins.length,
-        pendingAdmins: admins.filter((admin) => !admin.approved).length,
-        totalCertificates: certificates.length,
-        todayIssued: certificates.filter(
-          (cert) =>
-            new Date(cert.issuedAt).toDateString() === new Date().toDateString()
-        ).length,
-        monthlyIssued: certificates.filter(
-          (cert) => new Date(cert.issuedAt).getMonth() === new Date().getMonth()
-        ).length,
-      }));
-    } else {
-      const certificates = JSON.parse(localStorage.getItem("certificates") || "[]");
-      const myCerts = certificates.filter(
-        (cert) => cert.issuerId === adminData.userId
-      );
+        pendingCount,
+        approvedCount,
+        rejectedCount,
+        revokedCount
+      }))
+      // setStats((prev) => ({
+      //   ...prev,
+      //   myCertificates: myCerts.length,
+      //   todayIssued: myCerts.filter(
+      //     (cert) =>
+      //       new Date(cert.issuedAt).toDateString() === new Date().toDateString()
+      //   ).length,
+      //   monthlyIssued: myCerts.filter(
+      //     (cert) => new Date(cert.issuedAt).getMonth() === new Date().getMonth()
+      //   ).length,
+      //   pendingRequests: pendingCount,
+      //   approvedCertificates: approvedCount,
+      //   rejectedRequests: rejectedCount,
+      //   revokedCertificates: revokedCount,
+      //   totalProcessed: recentProcessed.length
+      // }));
 
-      const issueRequests = JSON.parse(localStorage.getItem("admin_certificate_requests") || "[]");
-      const revokeRequests = JSON.parse(localStorage.getItem("admin_revoke_requests") || "[]");
-      const pendingCount = issueRequests.filter(req => req.status === 'pending').length +
-        revokeRequests.filter(req => req.status === 'pending').length;
-
-      const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-
-      const approvedCount = processedRequests.filter(req => req.action === 'approved').length;
-      const rejectedCount = processedRequests.filter(req => req.action === 'rejected').length;
-      const approvedIssueCount = processedRequests.filter(req => req.action === 'approved' && req.requestType === 'issue').length;
-      const revokedCount = processedRequests.filter(req => req.action === 'approved' && req.requestType === 'revoke').length;
-
-      setStats((prev) => ({
-        ...prev,
-        myCertificates: myCerts.length,
-        todayIssued: myCerts.filter(
-          (cert) =>
-            new Date(cert.issuedAt).toDateString() === new Date().toDateString()
-        ).length,
-        monthlyIssued: myCerts.filter(
-          (cert) => new Date(cert.issuedAt).getMonth() === new Date().getMonth()
-        ).length,
-        pendingRequests: pendingCount,
-        approvedCertificates: approvedIssueCount,
-        rejectedRequests: rejectedCount,
-        revokedCertificates: revokedCount,
-        totalProcessed: processedRequests.length
-      }));
-
-      loadRecentProcessed();
-    }
+      // loadRecentProcessed();
+    // }
   };
 
-  const loadRecentProcessed = async() => {
-    // const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-    const { data: {data : processedRequests}} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
+  // const loadRecentProcessed = async() => {
+  //   // const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
+  //   const { data: {data : processedRequests}} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
 
-    console.log(processedRequests, 'processedRequests')
+  //   console.log(processedRequests, 'processedRequests')
 
-    const sortedRequests = processedRequests.approvedVc
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  //   const sortedRequests = processedRequests.approvedVc
+  //     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    setRecentProcessed(sortedRequests.approvedVc);
-  };
+  //   setRecentProcessed(sortedRequests.approvedVc);
+  // };
 
   useEffect( () => {
     const getProcessedRequests = async () => {
         const { data: {data : processedRequests}} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
         console.log(processedRequests, 'processedRequests')
          const sortedRequests = processedRequests
-      .sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
+      .sort((a, b) => new Date(a.CreatedAt) - new Date(b.CreatedAt));
         setRecentProcessed(sortedRequests);
+        console.log(sortedRequests, 'sortedRequests')
       }
         getProcessedRequests()
+        loadDashboardStats()
   }, [])
 
   const handleLogout = () => {
@@ -298,11 +301,11 @@ export default function DashboardContent() {
     console.log(recentProcessed, 'recentProcessed')
     if (filter === 'all') return recentProcessed.length;
     if (filter === 'approved') return recentProcessed.filter(req =>
-      req.action === 'approved' && req.requestType === 'issue'
+      req.status === 'approved' 
     ).length;
-    if (filter === 'rejected') return recentProcessed.filter(req => req.action === 'rejected').length;
+    if (filter === 'rejected') return recentProcessed.filter(req => req.status === 'rejected' && req.request === 'issue').length;
     if (filter === 'revoked') return recentProcessed.filter(req =>
-      req.action === 'approved' && req.requestType === 'revoke'
+      req.status === 'approved' && req.request === 'revoke'
     ).length;
     return 0;
   };
@@ -368,27 +371,27 @@ export default function DashboardContent() {
 
                   <div className="text-center p-4 bg-white shadow-md rounded-xl">
                     <p className="text-sm  mb-2 font-medium">총 관리자</p>
-                    <p className="text-3xl font-bold ">{stats.totalAdmins}</p>
+                    <p className="text-3xl font-bold ">{totalAdmins || 0}</p>
                   </div>
                   <div className="text-center p-4 bg-white shadow-md rounded-xl ">
                     <p className="text-sm  mb-1 font-medium">총 사용자</p>
-                    <p className="text-2xl font-bold ">{stats.approvedCertificates || 0}</p>
+                    <p className="text-2xl font-bold ">{totalUsers || 0}</p>
                   </div>
                   <div className="text-center p-4 bg-white shadow-md rounded-xl">
                     <p className="text-sm mb-1 font-medium">전체 수료증</p>
-                    <p className="text-2xl font-bold">{stats.myCertificates}</p>
+                    <p className="text-2xl font-bold">{totalStats.approvedCount + totalStats.rejectedCount + totalStats.revoked + totalStats.revokedCount || 0 }</p>
                   </div>
                   <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">거절한 요청</p>
-                    <p className="text-2xl font-bold ">{stats.rejectedRequests || 0}</p>
+                    <p className="text-sm  mb-1 font-medium">전체 요청</p>
+                    <p className="text-2xl font-bold ">{totalStats.pendingCount || 0}</p>
                   </div>
                   <div className="text-center p-4 bg-white shadow-md rounded-xl  ">
-                    <p className="text-sm  mb-1 font-medium">승인한 폐기</p>
-                    <p className="text-2xl font-bold ">{stats.revokedCertificates || 0}</p>
+                    <p className="text-sm  mb-1 font-medium">발급 수료증</p>
+                    <p className="text-2xl font-bold ">{totalStats.approvedCount || 0}</p>
                   </div>
                   <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">총 처리 건수</p>
-                    <p className="text-2xl font-bold ">{stats.totalProcessed || 0}</p>
+                    <p className="text-sm  mb-1 font-medium">폐기 수료증</p>
+                    <p className="text-2xl font-bold ">{totalStats.rejectedCount || 0}</p>
                   </div>
 
                 </div>
