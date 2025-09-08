@@ -9,7 +9,6 @@ export default function AdminNav() {
   const [userInfo, setUserInfo] = useState(null);
   const {admin} = useAdminInfoStore();
 
-
   useEffect(() => {
     // localStorage에서 로그인한 관리자 정보 불러오기
     const admins = JSON.parse(localStorage.getItem("admins") || "[]");
@@ -36,26 +35,20 @@ export default function AdminNav() {
   }, []);
 
   return (
-    <div className="fixed top-15 right-28 flex items-center  z-50">
+    <div className="fixed top-8 right-28 flex items-center  z-50">
       {/* 알림벨 */}
-      <div className="flex border border-amber-500 w-fit gap-6 items-center font-bold" >
-
-        
+      <div className="flex w-fit gap-8 h-15 border border-gray-200 rounded-xl bg-gray-50 shadow-md items-center font-bold" >
         <NotificationBell
           notifications={notifications}
           setNotifications={setNotifications}
         />
-
         {/* 관리자 이름 */}
         {userInfo && (
-          <Link href="/admin/profile">
-            <span className="text-gray-800 font-medium cursor-pointer hover:underline">
-              {userInfo.userName}님
-            </span>
+          <Link href="/admin/profile" className="flex items-center gap-4 pr-4">
+            <img src={admin.imgPath} className="w-10 h-10 rounded-full" alt="" />
+            <span className="inline-block text-xl" >{admin.nickName}님</span>
           </Link>
         )}
-        <img src={admin.imgPath} alt="" />
-        <span>{admin.nickName}</span>
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export default function AdminCertificateRequestsPage() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [userFilter, setUserFilter] = useState('all');
 
-  const itemsPerPage = 5; // 5개로 고정
+  const itemsPerPage = 10; // 5개로 고정
 
   // 처리 모달 상태
   const [showProcessModal, setShowProcessModal] = useState(false);
@@ -45,7 +45,7 @@ export default function AdminCertificateRequestsPage() {
       return data.data || [];
     },
     refetchOnWindowFocus: true,
-  });
+  })
 
   // 요청 처리 Mutation
   const processRequestMutation = useMutation({
@@ -59,7 +59,7 @@ export default function AdminCertificateRequestsPage() {
       queryClient.invalidateQueries({ queryKey: ['certificateRequests'] });
 
       const actionText = type === 'approve' ? '승인' : '거절';
-      const requestTypeText = getRequestTypeText(request.requestType);
+      const requestTypeText = getRequestTypeText(request.request);
       setResultMessage(
         `${request.userName}님의 ${request.certificateName} ${requestTypeText} 요청이 ${actionText}되었습니다.`
       );
@@ -86,9 +86,9 @@ export default function AdminCertificateRequestsPage() {
     if (requestTypeFilter === 'all') {
       return pendingRequests;
     } else if (requestTypeFilter === 'issue') {
-      return pendingRequests.filter((req) => req.requestType === 'issue');
+      return pendingRequests.filter((req) => req.request === 'issue');
     } else {
-      return pendingRequests.filter((req) => req.requestType === 'revoke');
+      return pendingRequests.filter((req) => req.request === 'revoke');
     }
   }, [requestTypeFilter, pendingRequests]);
 
@@ -144,16 +144,16 @@ export default function AdminCertificateRequestsPage() {
   // 통계 계산 - 대기중인 요청만 계산
   const stats = useMemo(() => {
     const total = pendingRequests.length;
-    const issueCount = pendingRequests.filter((req) => req.requestType === 'issue').length;
-    const revokeCount = pendingRequests.filter((req) => req.requestType === 'revoke').length;
+    const issueCount = pendingRequests.filter((req) => req.request === 'issue').length;
+    const revokeCount = pendingRequests.filter((req) => req.request === 'revoke').length;
     return { total, issueCount, revokeCount };
   }, [pendingRequests]);
 
   useEffect(() => setCurrentPage(1), [requestTypeFilter, searchTerm, sortOrder, userFilter, dateRange]);
 
   // 요청 타입별 배지 스타일
-  const getRequestTypeBadge = (requestType) => {
-    switch (requestType) {
+  const getRequestTypeBadge = (request) => {
+    switch (request) {
       case 'issue':
         return 'bg-blue-100 text-blue-700 px-2 py-1 rounded  font-medium';
       case 'revoke':
@@ -163,8 +163,8 @@ export default function AdminCertificateRequestsPage() {
     }
   };
 
-  const getRequestTypeText = (requestType) => {
-    switch (requestType) {
+  const getRequestTypeText = (request) => {
+    switch (request) {
       case 'issue':
         return '발급';
       case 'revoke':
@@ -196,21 +196,31 @@ export default function AdminCertificateRequestsPage() {
   };
 
   // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
-  const confirmProcessRequest = () => {
+  const confirmProcessRequest = async () => {
     if (!requestToProcess) return;
 
     // 거절일 때만 사유 입력 필수
-    if (processType === 'reject' && !processReason.trim()) {
-      setResultMessage('거절 사유를 입력해주세요.');
-      setShowResultModal(true);
+    if (requestToProcess.request === 'revoke') {
+      // setResultMessage('거절 사유를 입력해주세요.');
+      // setShowResultModal(true);
+      alert('거절 사유를 입력해주세요.');
       return;
     }
+    console.log(requestToProcess, ' requestToProcess', user)
+    const {updatedAt, createdAt, ...rest} = requestToProcess;
+    rest.status = "approved";
+    console.log(rest, user.userId, 'rest')
+    const data = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/user/vc/confirm`, {
+      ...rest,issuerId : user.userId
+    })
+    queryClient.invalidateQueries( ['certificateRequests'] );
+    closeProcessModal();
 
-    processRequestMutation.mutate({
-      request: requestToProcess,
-      type: processType,
-      reason: processReason,
-    });
+    // processRequestMutation.mutate({
+    //   request: requestToProcess,
+    //   type: processType,
+    //   reason: processReason,
+    // });
   };
 
   const formatDate = (dateString) => {
@@ -389,9 +399,9 @@ export default function AdminCertificateRequestsPage() {
                   <div className="col-span-1">요청일</div>
                   <div className="col-span-1 text-center">처리</div>
                 </div>
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y  divide-gray-200">
                   {paginatedRequests.map((request, index) => (
-                    <div key={request.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div key={request.id} className="px-6 py-4 text-sm hover:bg-gray-50 transition-colors">
                       <div className="grid grid-cols-1 md:grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] text-center gap-4 items-center">
                         {/* Mobile View */}
                         <div>{index + 1 }</div>
@@ -425,14 +435,14 @@ export default function AdminCertificateRequestsPage() {
                           <Button
                             onClick={() => openProcessModal(request, 'approve')}
                             disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                            className="bg-green-100 text-green-800 hover:bg-green-200 px-4 py-2 rounded-lg"
+                            className="bg-green-100 text-green-800 hover:bg-green-200 px-6 py-2 cursor-pointer rounded-lg"
                           >
                             승인
                           </Button>
                           <Button
                             onClick={() => openProcessModal(request, 'reject')}
                             disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                            className="bg-red-100 text-red-800 hover:bg-red-200 px-4 py-2 rounded-lg"
+                            className="bg-red-100 text-red-800 hover:bg-red-200 px-6 py-2 cursor-pointer rounded-lg"
                           >
                             거절
                           </Button>
@@ -512,7 +522,10 @@ export default function AdminCertificateRequestsPage() {
             </p>
           </div>
 
-          {processType === 'approve' ? (
+            <div className="mb-6">
+              <p className="text-gray-700 text-center">위 요청을 승인하시겠습니까?</p>
+            </div>
+          {/* {processType === 'approve' ? (
             // 승인 확인
             <div className="mb-6">
               <p className="text-gray-700 text-center">위 요청을 승인하시겠습니까?</p>
@@ -530,7 +543,7 @@ export default function AdminCertificateRequestsPage() {
               />
               <p className=" text-gray-500 mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
             </div>
-          )}
+          )} */}
 
           <div className="flex gap-3 mt-6">
             <button

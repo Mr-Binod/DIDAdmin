@@ -278,7 +278,7 @@ export default function AdminRequestPage() {
         </div>
 
         {/* 필터 및 검색 */}
-        <div className="bg-white p-4 px-10 rounded-lg shadow mb-6">
+        <div className="bg-white p-4  px-10 rounded-lg shadow mb-6">
           <div className="flex flex-col sm:flex-row gap-10">
             <div className="flex-1">
               <Input
@@ -339,7 +339,7 @@ export default function AdminRequestPage() {
               {/* 목록 */}
               <div className="divide-y divide-gray-200">
                 {paginatedRequests.map((request, index) => (
-                  <div key={request.userId} className="px-6 py-4 hover:bg-gray-50">
+                  <div key={request.userId} className="px-6 text-sm py-4 hover:bg-gray-50">
                     <div className="grid grid-cols-1 md:grid-cols-[80px_130px_150px_1fr_80px_1fr_1fr_1fr] gap-4">
                       {/* 관리자 정보 */}
                       <div className=" text-center font-medium text-gray-900">
@@ -446,7 +446,7 @@ export default function AdminRequestPage() {
                               <Button
                                 onClick={() => handleAction(request, "reject")}
                                 disabled={processing === request.userId}
-                                className="bg-red-100 text-red-800 hover:bg-red-200 px-8 py-2 rounded cursor-pointer "
+                                className="bg-red-100 text-red-800 hover:bg-red-200 px-6 py-2 rounded cursor-pointer "
                               >
                                 거절
                               </Button>
@@ -467,7 +467,7 @@ export default function AdminRequestPage() {
 
         {/* 페이지네이션 컨트롤 */}
         {totalPages  && (
-          <div className="mt-12 flex flex-col  items-center">
+          <div className="mt-12 text-sm flex flex-col  items-center">
             <div className="flex justify-center items-center gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
