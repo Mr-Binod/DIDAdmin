@@ -37,7 +37,7 @@ export default function DashboardContent() {
     myCertificates: 0,
     pendingRequests: 0,
   });
-  // https://dev.codedesign.ai/app/builder?project=certificationadminixvi3crh6z#home
+
   const [recentProcessed, setRecentProcessed] = useState([]);
   const [filteredProcessed, setFilteredProcessed] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
