@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 // dynamic import to prevent SSR issues
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
-export default function DonutPieChart() {
+export default function DonutPieChart({totalCert, totalRequest, issueRequest, revokeRequest}) {
     const option = {
         tooltip: {
             trigger: "item"
@@ -39,11 +39,10 @@ export default function DonutPieChart() {
                     show: false
                 },
                 data: [
-                    { value: 1048, name: "Search Engine" },
-                    { value: 735, name: "Direct" },
-                    { value: 580, name: "Email" },
-                    { value: 484, name: "Union Ads" },
-                    { value: 300, name: "Video Ads" }
+                    { value: totalCert, name: "전체 발급" },
+                    { value: totalRequest, name: "전체 요청" },
+                    { value: issueRequest, name: "발급 요청" },
+                    { value: revokeRequest, name: "폐기 요청" },
                 ]
             }
         ]
@@ -52,7 +51,7 @@ export default function DonutPieChart() {
     return (
         <div className=" flex justify-center items-center ">
             <div className="p-6 bg-white rounded-xl shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Donut Pie Chart</h2>
+                <h2 className="text-lg font-semibold mb-4">수료증 파이차트</h2>
                 <ReactECharts option={option} style={{ height: 400, width: 300 }} />
             </div>
         </div>

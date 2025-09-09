@@ -1,103 +1,48 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
 // Dynamically import to avoid SSR issues
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
-export default function MultiXAxisLineChart() {
-  const colors = ["#5470C6", "#EE6666"];
+export default function MultiXAxisLineChart({ rawData }) {
+  if(rawData.length === 0) return 
+
+  console.log(rawData, 'multiplex');
+  const [chartData, setChartData] = useState({ dates: [], counts: [] });
+  if(rawData.length === 0) return 
+  useEffect(() => {
+    // This effect runs whenever the rawData prop changes
+    const dates = Object.keys(rawData).sort();
+    const counts = dates.map(date => rawData[date]);
+    setChartData({ dates, counts });
+  }, [rawData]);
 
   const option = {
-    color: colors,
-    tooltip: {
-      trigger: "none",
-      axisPointer: {
-        type: "cross"
-      }
+    // ... (rest of your chart options)
+    
+    xAxis: {
+      type: "category",
+      data: chartData.dates // Use your processed date array
     },
-    legend: {},
-    grid: {
-      top: 70,
-      bottom: 50
+    yAxis: {
+      type: "value",
+      name: "총 수료증 개수"
     },
-    xAxis: [
-      {
-        type: "category",
-        axisTick: { alignWithLabel: true },
-        axisLine: {
-          onZero: false,
-          lineStyle: { color: colors[1] }
-        },
-        axisPointer: {
-          label: {
-            formatter: function (params) {
-              return (
-                "Precipitation " +
-                params.value +
-                (params.seriesData.length
-                  ? "：" + params.seriesData[0].data
-                  : "")
-              );
-            }
-          }
-        },
-        data: [
-          "2016-1", "2016-2", "2016-3", "2016-4",
-          "2016-5", "2016-6", "2016-7", "2016-8",
-          "2016-9", "2016-10", "2016-11", "2016-12"
-        ]
-      },
-      {
-        type: "category",
-        axisTick: { alignWithLabel: true },
-        axisLine: {
-          onZero: false,
-          lineStyle: { color: colors[0] }
-        },
-        axisPointer: {
-          label: {
-            formatter: function (params) {
-              return (
-                "Precipitation " +
-                params.value +
-                (params.seriesData.length
-                  ? "：" + params.seriesData[0].data
-                  : "")
-              );
-            }
-          }
-        },
-        data: [
-          "2015-1", "2015-2", "2015-3", "2015-4",
-          "2015-5", "2015-6", "2015-7", "2015-8",
-          "2015-9", "2015-10", "2015-11", "2015-12"
-        ]
-      }
-    ],
-    yAxis: [{ type: "value" }],
     series: [
       {
-        name: "Precipitation(2015)",
-        type: "line",
-        xAxisIndex: 1,
-        smooth: true,
-        emphasis: { focus: "series" },
-        data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2, 48.7, 18.8, 6.0, 2.3]
-      },
-      {
-        name: "Precipitation(2016)",
+        name: "Certificates Issued",
         type: "line",
         smooth: true,
-        emphasis: { focus: "series" },
-        data: [3.9, 5.9, 11.1, 18.7, 48.3, 69.2, 231.6, 46.6, 55.4, 18.4, 10.3, 0.7]
+        data: chartData.counts // Use your processed counts array
       }
     ]
   };
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-md">
-      <h2 className="text-lg font-semibold mb-4">Multiple X-Axis Line Chart</h2>
+      <h2 className="text-lg font-semibold mb-4">총 발급 된 수료증 개수</h2>
       <ReactECharts option={option} style={{ height: 400 }} />
     </div>
   );

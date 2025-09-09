@@ -343,7 +343,7 @@ export default function AdminRequestPage() {
                     <div className="grid grid-cols-1 md:grid-cols-[80px_130px_150px_1fr_80px_1fr_1fr_1fr] gap-4">
                       {/* 관리자 정보 */}
                       <div className=" text-center font-medium text-gray-900">
-                        {index + 1}
+                        {(currentPage - 1) * itemsPerPage + index + 1}
                       </div>
                       <div>
 

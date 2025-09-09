@@ -9,6 +9,7 @@ import Button from '@/components/UI/Button';
 import { useAdminInfoStore } from '@/Store/useAdminStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import Processing from '@/components/UI/Processing';
 
 export default function AdminCertificateRequestsPage() {
   // 헤더용 사용자
@@ -27,6 +28,9 @@ export default function AdminCertificateRequestsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [userFilter, setUserFilter] = useState('all');
+  const [load, setLoad] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [iserror, setIserror] = useState(false);
 
   const itemsPerPage = 10; // 5개로 고정
 
@@ -198,29 +202,88 @@ export default function AdminCertificateRequestsPage() {
   // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
   const confirmProcessRequest = async () => {
     if (!requestToProcess) return;
+    setLoad(true);
+    closeProcessModal()
+    try {
+      // 거절일 때만 사유 입력 필수
+      if (processType === 'reject') {
+        if (requestToProcess.request === 'revoke') {
+          // setResultMessage('거절 사유를 입력해주세요.');
+          // setShowResultModal(true);
+          await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/rejectrevoke`, {
+            
+              userId: requestToProcess.userId,
+              certName: requestToProcess.certificateName
+            
+          })
+          console.log(requestToProcess, ' requestToProcess', processType)
+          setLoad(false);
+          setVerified(true)
+          setTimeout(() => {
+            setVerified(false);
+          }, 1000);
+          queryClient.invalidateQueries(['certificateRequests']);
+          return;
+        }
 
-    // 거절일 때만 사유 입력 필수
-    if (requestToProcess.request === 'revoke') {
-      // setResultMessage('거절 사유를 입력해주세요.');
-      // setShowResultModal(true);
-      alert('거절 사유를 입력해주세요.');
-      return;
+        await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/rejectissue`, {
+        
+            userId: requestToProcess.userId,
+            certName: requestToProcess.certificateName
+          
+        })
+        setLoad(false);
+        setVerified(true)
+        setTimeout(() => {
+          setVerified(false);
+        }, 1000);
+        queryClient.invalidateQueries(['certificateRequests']);
+        return
+      }
+      if (requestToProcess.request === 'revoke') {
+        await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/approverevoke`, {
+          
+            userId: requestToProcess.userId,
+            certName: requestToProcess.certificateName
+          
+        })
+        setLoad(false);
+        setVerified(true)
+        setTimeout(() => {
+          setVerified(false);
+        }, 1000);
+        queryClient.invalidateQueries(['certificateRequests']);
+        return
+      }
+      console.log(requestToProcess, ' requestToProcess', processType)
+      const { updatedAt, createdAt, ...rest } = requestToProcess;
+      rest.status = "approved";
+      console.log(rest, user.userId, 'rest')
+      const data = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/user/vc/confirm`, {
+        ...rest, issuerId: user.userId
+      })
+      queryClient.invalidateQueries(['certificateRequests']);
+      closeProcessModal();
+
+      // processRequestMutation.mutate({
+      //   request: requestToProcess,
+      //   type: processType,
+      //   reason: processReason,
+      // });
+
+      setLoad(false);
+      setVerified(true)
+      setTimeout(() => {
+        setVerified(false);
+      }, 1000);
+    } catch (error) {
+      setLoad(false);
+      setIserror(true)
+      setTimeout(() => {
+        setIserror(false);
+      }, 1000);
+      queryClient.invalidateQueries(['certificateRequests']);
     }
-    console.log(requestToProcess, ' requestToProcess', user)
-    const {updatedAt, createdAt, ...rest} = requestToProcess;
-    rest.status = "approved";
-    console.log(rest, user.userId, 'rest')
-    const data = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/user/vc/confirm`, {
-      ...rest,issuerId : user.userId
-    })
-    queryClient.invalidateQueries( ['certificateRequests'] );
-    closeProcessModal();
-
-    // processRequestMutation.mutate({
-    //   request: requestToProcess,
-    //   type: processType,
-    //   reason: processReason,
-    // });
   };
 
   const formatDate = (dateString) => {
@@ -404,7 +467,7 @@ export default function AdminCertificateRequestsPage() {
                     <div key={request.id} className="px-6 py-4 text-sm hover:bg-gray-50 transition-colors">
                       <div className="grid grid-cols-1 md:grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] text-center gap-4 items-center">
                         {/* Mobile View */}
-                        <div>{index + 1 }</div>
+                        <div>{((currentPage -1) * itemsPerPage) + index + 1}</div>
                         <div className="md:hidden space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="font-medium text-gray-900">{request.userName}</div>
@@ -412,7 +475,7 @@ export default function AdminCertificateRequestsPage() {
                               {getRequestTypeText(request.status)}
                             </span>
                           </div>
-                          
+
                           <div className=" text-gray-800">{request.certificateName}</div>
                           <div className=" text-gray-500">요청일: {formatDate(request.createdAt)}</div>
                           <div className="flex gap-2 pt-2">
@@ -484,8 +547,8 @@ export default function AdminCertificateRequestsPage() {
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
                       className={`px-4 py-2 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
-                          ? 'bg-borderbackblue text-white '
-                          : ' hover:bg-gray-50'
+                        ? 'bg-borderbackblue text-white '
+                        : ' hover:bg-gray-50'
                         }`}
                     >
                       {pageNum}
@@ -510,21 +573,21 @@ export default function AdminCertificateRequestsPage() {
       <Modal isOpen={showProcessModal} onClose={closeProcessModal}>
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
-          <div className="mb-4">
-            <p className="text-gray-700 font-medium mb-2">수료증:</p>
-            <p className=" text-gray-600">{requestToProcess?.certificateName}</p>
-          </div>
-
-          <div className="mb-4">
-            <p className="text-gray-700 font-medium mb-2">요청자:</p>
-            <p className=" text-gray-600">
-              {requestToProcess?.userName} ({requestToProcess?.userEmail})
-            </p>
-          </div>
-
-            <div className="mb-6">
-              <p className="text-gray-700 text-center">위 요청을 승인하시겠습니까?</p>
+          <div className="px-8">
+            <div className="mb-4 flex gap-4">
+              <p className="text-gray-800 font-medium ">요청자:</p>
+              <p className=" ">
+                {requestToProcess?.userName}
+              </p>
             </div>
+            <div className="mb-8 flex gap-4 ">
+              <p className="text-gray-800 font-medium ">수료증:</p>
+              <p className=" ">{requestToProcess?.certificateName}</p>
+            </div>
+            <div className="mb-6">
+              <p className="text-lg  ">위 요청을 승인하시겠습니까?</p>
+            </div>
+          </div>
           {/* {processType === 'approve' ? (
             // 승인 확인
             <div className="mb-6">
@@ -548,14 +611,14 @@ export default function AdminCertificateRequestsPage() {
           <div className="flex gap-3 mt-6">
             <button
               onClick={closeProcessModal}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
             >
               취소
             </button>
             <button
               onClick={confirmProcessRequest}
               disabled={processRequestMutation.isPending}
-              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors font-medium ${processType === 'approve' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} disabled:bg-gray-400`}
+              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors cursor-pointer font-medium ${processType === 'approve' ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'} disabled:bg-gray-400`}
             >
               {processRequestMutation.isPending ? <LoadingSpinner size="sm" showMessage={false} /> : (processType === 'approve' ? '승인 확정' : '거절 확정')}
             </button>
@@ -577,6 +640,9 @@ export default function AdminCertificateRequestsPage() {
           </button>
         </div>
       </Modal>
+      {verified && <Processing ImageName={"/images/verified.gif"} failed={false} />}
+      {load && <Processing ImageName={"/images/Processing.gif"} failed={false} className="mb-8" />}
+      {iserror && <Processing ImageName={"/images/failed.png"} failed={true} className="mb-8" />}
     </div>
   );
 }
