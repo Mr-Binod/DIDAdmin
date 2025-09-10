@@ -333,15 +333,15 @@ export default function DashboardContent() {
 
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="flex min-h-screen rounded-2xl text-textIcon bg-deepnavy">
       <div className="flex-1 ml-64 p-6 flex flex-col">
         <main className="flex-1 overflow-y-auto px-4 lg:px-12 lg:py-0 py-6 max-w-8xl mx-auto w-full">
           {/* 환영 메시지 */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-darkergray mb-2">
               환영합니다, {admin?.name || admin?.userName || "관리자"}님
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm sm:text-base text-darkergray">
               {isSuperAdmin
                 ? "수료증 발급 기관과 관리자를 관리하는 슈퍼관리자 대시보드입니다."
                 : "수료증 발급 및 관리를 위한 관리자 대시보드입니다."}
@@ -351,61 +351,61 @@ export default function DashboardContent() {
           {/* 메인 그리드 */}
           <div className="space-y-6">
             {/* 통계 카드 */}
-            <div className=" rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">
+            <div className=" rounded-2xl shadow-sm border bg-darkergray text-textIcons border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-6">
                 "내 관리 현황"
-              </h3>
+              </h2>
 
               {isSuperAdmin ? (
-                <div className="grid grid-cols-2 md:grid-cols-3  lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 h-30  lg:grid-cols-6 gap-4"> 
 
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl">
-                    <p className="text-sm  mb-2 font-medium">총 관리자</p>
-                    <p className="text-3xl font-bold ">{totalAdmins || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
+                    <p className=" mb-6  text-lg font-medium">총 관리자</p>
+                    <p className="text-3xl font-medium ">{totalAdmins || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">총 사용자</p>
-                    <p className="text-2xl font-bold ">{totalUsers || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">총 사용자</p>
+                    <p className="text-3xl font-medium ">{totalUsers || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl">
-                    <p className="text-sm mb-1 font-medium">전체 수료증</p>
-                    <p className="text-2xl font-bold">{totalStats.approvedCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
+                    <p className=" mb-6  text-lg font-medium">전체 수료증</p>
+                    <p className="text-3xl font-medium">{totalStats.approvedCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">전체 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.pendingCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">전체 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.pendingCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl  ">
-                    <p className="text-sm  mb-1 font-medium">발급 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.issueCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl  ">
+                    <p className=" mb-6  text-lg font-medium">발급 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.issueCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">폐기 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.revokeCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">폐기 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.revokeCount || 0}</p>
                   </div>
 
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">총 사용자</p>
-                    <p className="text-2xl font-bold ">{totalUsers || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">총 사용자</p>
+                    <p className="text-3xl font-medium ">{totalUsers || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl">
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
                     <p className="text-sm mb-1 font-medium">전체 수료증</p>
-                    <p className="text-2xl font-bold">{totalStats.approvedCount || 0}</p>
+                    <p className="text-3xl font-medium">{totalStats.approvedCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">전체 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.pendingCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">전체 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.pendingCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl  ">
-                    <p className="text-sm  mb-1 font-medium">발급 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.issueCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl  ">
+                    <p className=" mb-6  text-lg font-medium">발급 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.issueCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
-                    <p className="text-sm  mb-1 font-medium">폐기 요청</p>
-                    <p className="text-2xl font-bold ">{totalStats.revokeCount || 0}</p>
+                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                    <p className=" mb-6  text-lg font-medium">폐기 요청</p>
+                    <p className="text-3xl font-medium ">{totalStats.revokeCount || 0}</p>
                   </div>
 
                 </div>
@@ -414,7 +414,7 @@ export default function DashboardContent() {
             <div className="flex  justify-between gap-6 ">
               <div className="w-[1100px] rounded-2xl " >
                 {/* <MultiXAxisLineChart rawData={MultiChartData } style={{ height: "100%", width: "100%" }} /> */}
-                <div className="p-6 bg-white rounded-xl shadow-md">
+                <div className="p-6 bg-darkergray rounded-xl shadow-md">
                   <h2 className="text-lg font-semibold mb-4">총 발급 된 수료증 개수</h2>
                   <ReactECharts option={option} style={{ height: 400 }} />
                 </div>
@@ -424,10 +424,10 @@ export default function DashboardContent() {
               </div>
             </div>
             {/* 최근 처리한 수료증 내역 */}
-            <div className="bg-white rounded-2xl min-h-200 shadow-sm border border-gray-200">
+            <div className="bg-darkergray rounded-2xl min-h-200 shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">최근 처리 내역</h3>
+                  <h3 className="text-2xl font-bold text-textIcons">최근 처리 내역</h3>
                   <Link
                     href="/admin/certificate-requests"
                     className="text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -437,8 +437,8 @@ export default function DashboardContent() {
                 </div>
 
                 {/* 검색바 */}
-                <div className="mb-4">
-                  <div className="relative">
+                <div className="mb-8">
+                  <div className="relative ">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -449,7 +449,7 @@ export default function DashboardContent() {
                       placeholder="사용자명, 수료증명, 사유로 검색..."
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
                     />
                     {searchQuery && (
                       <button
@@ -465,43 +465,43 @@ export default function DashboardContent() {
                 </div>
 
                 {/* 필터 섹션 */}
-                <div className="space-y-4 flex justify-around">
+                <div className="space-y-4  flex justify-around">
                   {/* 상태 필터 버튼들 */}
                   <div>
-                    <h4 className=" font-bold text-gray-700 mb-2">상태별 필터</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                    <h4 className=" font-medium text-gray-700 text-lg">상태별 필터 : </h4>
                       <button
                         onClick={() => handleFilterClick('all')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeFilter === 'all'
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'all'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         전체 ({getFilterCount('all')})
                       </button>
                       <button
                         onClick={() => handleFilterClick('approved')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeFilter === 'approved'
-                          ? 'bg-green-100 text-green-700 border border-green-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'approved'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         승인된 수료증 ({getFilterCount('approved')})
                       </button>
                       <button
                         onClick={() => handleFilterClick('rejected')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeFilter === 'rejected'
-                          ? 'bg-red-100 text-red-700 border border-red-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'rejected'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         거절된 수료증 ({getFilterCount('rejected')})
                       </button>
                       <button
                         onClick={() => handleFilterClick('revoked')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeFilter === 'revoked'
-                          ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'revoked'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         폐기한 수료증 ({getFilterCount('revoked')})
@@ -511,40 +511,40 @@ export default function DashboardContent() {
 
                   {/* 날짜 필터 버튼들 */}
                   <div>
-                    <h4 className="font-bold text-gray-700 mb-2">기간별 필터</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                    <h4 className="font-medium text-gray-700 ">기간별 필터 : </h4>
                       <button
                         onClick={() => handleDateFilterClick('all')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${dateFilter === 'all'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'all'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         전체 기간 ({getDateFilterCount('all')})
                       </button>
                       <button
                         onClick={() => handleDateFilterClick('today')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${dateFilter === 'today'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'today'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         오늘 ({getDateFilterCount('today')})
                       </button>
                       <button
                         onClick={() => handleDateFilterClick('week')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${dateFilter === 'week'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'week'
+                         ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         지난 7일 ({getDateFilterCount('week')})
                       </button>
                       <button
                         onClick={() => handleDateFilterClick('month')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${dateFilter === 'month'
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'month'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
                         지난 30일 ({getDateFilterCount('month')})
@@ -593,7 +593,7 @@ export default function DashboardContent() {
                 <>
                   <div className="space-y-3 p-4 md:p-6">
                     {/* 헤더 - 데스크톱에서만 표시 */}
-                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg  font-medium text-gray-500 uppercase tracking-wider">
                       <div>번호</div>
                       <div>사용자 ID</div>
                       <div>요청 유형</div>
@@ -686,9 +686,9 @@ export default function DashboardContent() {
                           </div>
 
                           <div>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.requestType === 'issue'
+                            <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.request === 'issue'
                               ? 'bg-blue-100 text-blue-700'
-                              : request.requestType === 'revoke'
+                              : request.request === 'revoke'
                                 ? 'bg-red-100 text-red-700'
                                 : 'bg-yellow-100 text-yellow-700'
                               }`}>
@@ -711,8 +711,8 @@ export default function DashboardContent() {
                           </div>
 
                           <div>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.action === 'approved' ? 'bg-green-100 text-green-700'
-                              : request.action === 'rejected' ? 'bg-red-100 text-red-700'
+                            <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.status === 'approved' ? 'bg-green-100 text-green-700'
+                              : request.status === 'rejected' ? 'bg-red-100 text-red-700'
                                 : 'bg-yellow-100 text-yellow-700'
                               }`}>
                               {request.status === 'approved'

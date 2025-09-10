@@ -55,8 +55,8 @@ export default function RootLayout({ children }) {
         {hideLayout ? (
           <>{children}</>
         ) : (
-        <div className='w-screen h-[100vh] bg-blueback' >
-      <div className='    h-[100vh] border-12 rounded-4xl overflow-hidden  border-blueback overflow-y-scroll '>
+        <div className='w-screen h-[100vh] bg-deepnavy' >
+      <div className='    h-[100vh] border-12 rounded-4xl overflow-hidden  border-deepnavy overflow-y-scroll '>
         {/* <div className='border-5 rounded-3xl border-grayblack overflow-y-scroll h-[calc(100vh-24px)]' > */}
         
           <div className="flex min-h-screen">

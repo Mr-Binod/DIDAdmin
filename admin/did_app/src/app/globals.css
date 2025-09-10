@@ -30,14 +30,16 @@ body {
   --color-darkviolet: #15133a;
   --color-darkviolet2: #15133b;
   --color-lightbeige: #B2A493;
-  --color-grayblack : #0E1114;
   --color-lightgray : #D9D8D5;
+  --color-darkergray : #E7ECF0;
+  --color-grayblack : #0E1114;
   --color-whiteback : #FFFFFF;
   --color-blackback : #393D40;
   --color-textIcons : #1B242D;
   --color-blueback : #879FA5;
   --color-lightbackblue : #FAFCFF;
   --color-borderbackblue : #385B81;
+  --color-deepnavy : #2A4259;
   --color-intro: #C5D8E4;
   --color-introlight: #ADD8E6;
   --font-sans: var(--font-geist-sans);

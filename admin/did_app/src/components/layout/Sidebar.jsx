@@ -141,7 +141,7 @@ export default function Sidebar() {
           bg-grayblack 
           overflow-y-auto flex-shrink-0 
           top-0 left-0 z-40
-           rounded-tl-[21px] rounded-bl-[21px]
+           rounded-tl-[20px] rounded-bl-[20px]
            m-3 py-4
           h-[calc(100vh-24px))]
         `}

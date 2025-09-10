@@ -21,12 +21,12 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="ml-64 min-h-[calc(100vh-24px)] bg-blueback ">
-    <div className="p-6 max-w-4xl  mx-auto">
+    <div className="ml-64 min-h-[calc(100vh-24px)]  ">
+    <div className="p-6 max-w-5xl  mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-whiteback">내 정보</h1>
 
       {/* 프로필 카드 */}
-      <div className="border border-gray-200  rounded-xl h-180 shadow-xl bg-white p-16">
+      <div className="border border-gray-200  rounded-xl h-180 shadow-xl bg-darkergray p-16">
         {/* 상단 프로필 헤더 */}
         <div className="flex items-center gap-20 mb-16">
           {/* 아바타 */}
