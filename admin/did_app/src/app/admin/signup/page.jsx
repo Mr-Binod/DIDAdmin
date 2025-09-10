@@ -41,20 +41,20 @@ export default function AdminSignupForm() {
   const [nickname, setNickname] = useState("");
 
   // 폼 데이터 임시 저장 (새로고침 대응)
-  useEffect(() => {
-    const savedData = localStorage.getItem("admin_signup_temp");
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData);
-        setUserName(data.userName || "");
-        setUserId(data.userId || "");
-        setCompany(data.company || "");
-        setCurrentStep(data.currentStep || 1);
-      } catch (error) {
-        console.error("임시 데이터 로드 실패:", error);
-      }
-    }
-  }, []);
+  // useEffect(() => {
+  //   const savedData = localStorage.getItem("admin_signup_temp");
+  //   if (savedData) {
+  //     try {
+  //       const data = JSON.parse(savedData);
+  //       setUserName(data.userName || "");
+  //       setUserId(data.userId || "");
+  //       setCompany(data.company || "");
+  //       setCurrentStep(data.currentStep || 1);
+  //     } catch (error) {
+  //       console.error("임시 데이터 로드 실패:", error);
+  //     }
+  //   }
+  // }, []);
 
   // 폼 데이터 임시 저장
   useEffect(() => {

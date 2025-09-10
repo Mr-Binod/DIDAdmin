@@ -34,7 +34,7 @@ export default function RootLayout({ children }) {
           /* 스크롤바 트랙(배경) 스타일 */
           ::-webkit-scrollbar-track {
             background-color: #FAFCFF; /* bg-amber-500과 비슷한 색상 */
-            border-radius: 0 15px 15px 0; /* 둥근 모서리 */
+            border-radius: 15px 15px 15px 15px; /* 둥근 모서리 */
           }
           
           /* 스크롤바 썸(드래그하는 부분) 스타일 */

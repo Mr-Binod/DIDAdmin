@@ -216,7 +216,7 @@ export default function DashboardContent() {
       const { data: { data: processedRequests } } = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
       console.log(processedRequests, 'processedRequests')
       const sortedRequests = processedRequests
-        .sort((a, b) => new Date(a.CreatedAt) - new Date(b.CreatedAt));
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort descending for recent items first
       setRecentProcessed(sortedRequests);
       console.log(sortedRequests, 'sortedRequests')
     }
@@ -387,26 +387,27 @@ export default function DashboardContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="text-center p-4 bg-slate-50 rounded-xl border">
-                    <p className="text-sm text-slate-600 mb-1 font-medium">전체 수료증</p>
-                    <p className="text-2xl font-bold text-slate-800">{stats.myCertificates}</p>
+                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
+                    <p className="text-sm  mb-1 font-medium">총 사용자</p>
+                    <p className="text-2xl font-bold ">{totalUsers || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                    <p className="text-sm text-green-600 mb-1 font-medium">승인한 발급</p>
-                    <p className="text-2xl font-bold text-green-700">{stats.approvedCertificates || 0}</p>
+                  <div className="text-center p-4 bg-white shadow-md rounded-xl">
+                    <p className="text-sm mb-1 font-medium">전체 수료증</p>
+                    <p className="text-2xl font-bold">{totalStats.approvedCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-red-50 rounded-xl border border-red-200">
-                    <p className="text-sm text-red-600 mb-1 font-medium">거절한 요청</p>
-                    <p className="text-2xl font-bold text-red-700">{stats.rejectedRequests || 0}</p>
+                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
+                    <p className="text-sm  mb-1 font-medium">전체 요청</p>
+                    <p className="text-2xl font-bold ">{totalStats.pendingCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
-                    <p className="text-sm text-purple-600 mb-1 font-medium">승인한 폐기</p>
-                    <p className="text-2xl font-bold text-purple-700">{stats.revokedCertificates || 0}</p>
+                  <div className="text-center p-4 bg-white shadow-md rounded-xl  ">
+                    <p className="text-sm  mb-1 font-medium">발급 요청</p>
+                    <p className="text-2xl font-bold ">{totalStats.issueCount || 0}</p>
                   </div>
-                  <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                    <p className="text-sm text-indigo-600 mb-1 font-medium">총 처리 건수</p>
-                    <p className="text-2xl font-bold text-indigo-700">{stats.totalProcessed || 0}</p>
+                  <div className="text-center p-4 bg-white shadow-md rounded-xl ">
+                    <p className="text-sm  mb-1 font-medium">폐기 요청</p>
+                    <p className="text-2xl font-bold ">{totalStats.revokeCount || 0}</p>
                   </div>
+
                 </div>
               )}
             </div>
@@ -423,7 +424,7 @@ export default function DashboardContent() {
               </div>
             </div>
             {/* 최근 처리한 수료증 내역 */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+            <div className="bg-white rounded-2xl min-h-200 shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900">최근 처리 내역</h3>
@@ -553,7 +554,7 @@ export default function DashboardContent() {
                 </div>
               </div>
 
-              {!filteredProcessed.length === 0 ? (
+              {filteredProcessed.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -592,12 +593,12 @@ export default function DashboardContent() {
                 <>
                   <div className="space-y-3 p-4 md:p-6">
                     {/* 헤더 - 데스크톱에서만 표시 */}
-                    <div className="hidden md:grid grid-cols-7 text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <div>번호</div>
-                      <div>사용자</div>
+                      <div>사용자 ID</div>
                       <div>요청 유형</div>
                       <div>과정명</div>
-                      <div>사유</div>
+                      <div>내용</div>
                       <div>처리일</div>
                       <div>상태</div>
 
@@ -605,7 +606,7 @@ export default function DashboardContent() {
 
                     {/* 데이터 행들 */}
                     {paginatedItems.map((request, index) => (
-                      <div key={request.id || request._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={request._id || (startIndex + index)} className="bg-white border  border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
 
                         {/* 모바일 레이아웃 */}
                         <div className="md:hidden space-y-3">
@@ -647,7 +648,7 @@ export default function DashboardContent() {
                             <div>
                               <span className="text-gray-500">처리일: </span>
                               <span className="text-gray-900">
-                                {new Date(request.CreatedAt).toLocaleDateString('ko-KR')}
+                                {new Date(request.createdAt).toLocaleDateString('ko-KR')}
                               </span>
                             </div>
                           </div>
@@ -671,17 +672,17 @@ export default function DashboardContent() {
                         </div>
 
                         {/* 데스크톱 레이아웃 */}
-                        <div className="hidden text-center md:grid grid-cols-7 gap-4 items-center">
+                        <div className="hidden  text-center md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] gap-4 items-center">
                           <div>{startIndex + index + 1}</div>
-                          <div className="flex items-center space-x-3">
-                            {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          {/* <div className="flex items-center space-x-3"> */}
+                          {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                               <span className="text-sm font-medium text-gray-600">
                                 {request.userName?.charAt(0) || request.userId?.charAt(0) || 'U'}
                               </span>
                             </div> */}
-                            <div className="text-sm font-medium text-gray-900">
-                              {highlightText(request.userName || request.userId, searchQuery)}
-                            </div>
+                          {/* </div> */}
+                          <div className="text-sm  font-medium text-gray-900">
+                            {highlightText(request.userName || request.userId, searchQuery)}
                           </div>
 
                           <div>
@@ -702,11 +703,11 @@ export default function DashboardContent() {
                           </div>
 
                           <div className="text-sm text-gray-500 truncate">
-                            {request.reason ? highlightText(request.reason, searchQuery) : '-'}
+                            { request.description || "-"}
                           </div>
 
                           <div className="text-sm text-gray-500">
-                            {new Date(request.createdAt).toLocaleDateString()}
+                            {new Date(request.createdAt).toLocaleDateString('ko-KR')}
                           </div>
 
                           <div>
