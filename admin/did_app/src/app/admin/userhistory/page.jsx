@@ -5,6 +5,24 @@ import Modal from "../../../components/UI/Modal";
 import Input from "../../../components/UI/Input";
 import axios from "axios";
 
+const CopyIcon = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+  </svg>
+);
+
 
 export default function LoginHistoryPage() {
   const [records, setRecords] = useState([]);
@@ -21,29 +39,40 @@ export default function LoginHistoryPage() {
   // 에러 모달
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
+  const [copiedDid, setCopiedDid] = useState(null);
 
   useEffect(() => {
     // loadRecords();
     const loaduserData = async () => {
-      const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/user/users`);
-      console.log(data.data, 'userData');
-      const sortedData = data.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      setRecords(sortedData);
-    }
-    loaduserData()
+      setLoading(true);
+      try {
+        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/user/users`);
+        console.log(data.data, 'userData');
+        // The useEffect below will handle sorting, so we can set the raw records here.
+        setRecords(data.data || []);
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+        setResultMessage("사용자 기록을 불러오는 중 오류가 발생했습니다.");
+        setShowResultModal(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loaduserData();
   }, []);
 
   useEffect(() => {
     let filtered = [...records];
 
     // 검색 (DID 또는 이름 기반)
-    // if (searchTerm.trim()) {
-    //   filtered = filtered.filter(
-    //     (rec) =>
-    //       rec.did.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //       rec.name.toLowerCase().includes(searchTerm.toLowerCase())
-    //   );
-    // }
+    if (searchTerm.trim()) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (rec) =>
+          rec.didAddress?.toLowerCase().includes(lowercasedSearchTerm) ||
+          rec.userName?.toLowerCase().includes(lowercasedSearchTerm)
+      );
+    }
 
     // 정렬
     filtered.sort((a, b) => {
@@ -97,6 +126,12 @@ export default function LoginHistoryPage() {
   //   }
   // };
 
+  const handleCopy = (did) => {
+    navigator.clipboard.writeText(did);
+    setCopiedDid(did);
+    setTimeout(() => setCopiedDid(null), 2000); // Reset after 2 seconds
+  };
+
   const closeResultModal = () => {
     setShowResultModal(false);
     setResultMessage("");
@@ -117,6 +152,8 @@ export default function LoginHistoryPage() {
     return filteredRecords.slice(start, start + itemsPerPage);
   }, [filteredRecords, currentPage]);
 
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -127,7 +164,7 @@ export default function LoginHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-8xl ml-64 px-12 mx-auto">
+      <div className="max-w-8xl ml-64 px-12">
         {/* 헤더 */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">사용자 활동 기록</h1>
@@ -138,17 +175,17 @@ export default function LoginHistoryPage() {
 
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-5 rounded-lg shadow border-l-4 border-gray-400">
             <h3 className="text-sm font-medium text-gray-500">전체 로그인 기록</h3>
             <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-5 rounded-lg shadow border-l-4 border-indigo-500">
             <h3 className="text-sm font-medium text-gray-500">발급된 VC</h3>
             <p className="text-2xl font-bold text-indigo-600">
               {stats.totalIssuedVCs}
             </p>
           </div>
-          {/* <div className="bg-white p-4 rounded-lg shadow">
+          {/* <div className="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
             <h3 className="text-sm font-medium text-gray-500">검증된 VC</h3>
             <p className="text-2xl font-bold text-green-600">
               {stats.totalVerifiedVCs}
@@ -161,7 +198,7 @@ export default function LoginHistoryPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
-                placeholder="이름 또는 DID 계정으로 검색..."
+                placeholder="사용자 이름 또는 DID 주소로 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-10"
@@ -193,84 +230,126 @@ export default function LoginHistoryPage() {
             <div>
               {/* 헤더 */}
               <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-[80px_100px_150px_250px_1fr_1fr] text-center gap-4  text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] text-left gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div>번호</div>
-                  <div>사진</div>
-                  <div>사용자 ID</div>
                   <div>사용자 이름</div>
+                  <div>사용자 ID</div>
                   <div>사용자 DID</div>
-                  {/* <div className="hidden md:block">로그인 일시</div> */}
-                  <div className="hidden md:block text-center">생년월일</div>
+                  <div className="text-left">생년월일</div>
                 </div>
               </div>
 
               {/* 리스트 */}
               <div className="divide-y divide-gray-200">
                 {paginatedRecords.map((rec, index) => (
-                  <div key={rec.id} className="px-6 py-4 hover:bg-gray-50">
-                    <div className="items-center grid grid-cols-1 text-center  md:grid-cols-[80px_100px_150px_250px_1fr_1fr] gap-4">
-                      <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
-                      <div className="hidden md:flex justify-center md:block  text-sm text-gray-900">
-                        <img src={rec.imgPath} className="w-8 h-8 rounded-lg" alt="" />
+                  <div key={rec.id} className="px-4 py-4 md:px-6 hover:bg-gray-50 transition-colors duration-150">
+                    {/* Desktop View */}
+                    <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] items-center gap-4 text-sm">
+                      <div className="text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</div>
+                      <div className="flex items-center gap-3">
+                        <img src={rec.imgPath || '/images/default-avatar.png'} className="w-9 h-9 rounded-full object-cover" alt={`${rec.userName} profile`} />
+                        <span className="font-medium text-gray-900">{rec.userName}</span>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {rec.userId}
+                      <div className="text-gray-700">{rec.userId}</div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <span className="truncate">{rec.didAddress}</span>
+                        <button onClick={() => handleCopy(rec.didAddress)} className="text-gray-400 hover:text-blue-600 transition-colors">
+                          {copiedDid === rec.didAddress ? (
+                            <span className="text-xs text-blue-600">Copied!</span>
+                          ) : (
+                            <CopyIcon className="w-4 h-4" />
+                          )}
+                        </button>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {rec.userName}
-                      </div>
-                      <div className="text-sm   text-gray-900 mx-auto overflow-ellipsis overflow-hidden">{rec.didAddress}</div>
+                      <div className="text-gray-700">{rec.birthDate}</div>
+                    </div>
 
-                      {/* <div className="hidden md:block text-sm ">
-                        {rec.verifiedVCs}
-                      </div> */}
-                      <div className="hidden md:block text-sm   ">
-                        {rec.birthDate}
+                    {/* Mobile View */}
+                    <div className="md:hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img src={rec.imgPath || '/images/default-avatar.png'} className="w-10 h-10 rounded-full object-cover" alt={`${rec.userName} profile`} />
+                          <div>
+                            <p className="font-bold text-gray-900">{rec.userName}</p>
+                            <p className="text-xs text-gray-500">{rec.userId}</p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          #{ (currentPage - 1) * itemsPerPage + index + 1 }
+                        </div>
                       </div>
-
-                      {/* 모바일 전용 */}
-                      <div className="md:hidden mt-2 space-y-1 text-xs text-gray-600">
-                        <div>DID: {rec.did}</div>
-                        <div>로그인: {formatDate(rec.loginAt)}</div>
-                        <div>발급 VC: {rec.issuedVCs}</div>
-                        <div>검증 VC: {rec.verifiedVCs}</div>
+                      <div className="mt-4 space-y-2 text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500">DID Address</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-800 truncate">{rec.didAddress}</span>
+                            <button onClick={() => handleCopy(rec.didAddress)} className="text-gray-400 hover:text-blue-600">
+                              {copiedDid === rec.didAddress ? (
+                                <span className="text-xs text-blue-600">Copied!</span>
+                              ) : (
+                                <CopyIcon className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500">생년월일</span>
+                          <span className="text-gray-800">{rec.birthDate}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* 페이지네이션 */}
-              <div className="flex justify-center items-center gap-2 py-4">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  이전
-                </button>
-                <span className="text-sm text-gray-600">
-                  {currentPage} /{" "}
-                  {Math.ceil(filteredRecords.length / itemsPerPage)}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) =>
-                      Math.min(
-                        p + 1,
-                        Math.ceil(filteredRecords.length / itemsPerPage)
-                      )
-                    )
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(filteredRecords.length / itemsPerPage)
-                  }
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  다음
-                </button>
-              </div>
+              {/* 페이지네이션 - 개선된 버전 */}
+              {totalPages > 1 && (
+                <div className="flex flex-col items-center gap-4 py-4 px-6 border-t">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
+                    >
+                      이전
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5 || currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        if (pageNum > totalPages) return null;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 rounded-md text-sm ${currentPage === pageNum
+                                ? 'bg-blue-600 text-white font-bold'
+                                : 'border border-gray-300 hover:bg-gray-100'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
+                    >
+                      다음
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import { useAdminInfoStore, useIsSuperAdminStore } from "../../../Store/useAdminStore";
 import { useQuery } from "@tanstack/react-query";
 import DonutPieChart from "../../../components/Charts/Piechart";
-import MultiXAxisLineChart from "../../../components/Charts/MultipleXchart";
+// import MultiXAxisLineChart from "../../../components/Charts/MultipleXchart";
 import axios from "axios";
+import dynamic from "next/dynamic";
 
+const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
 // 메인 대시보드 컴포넌트
 export default function DashboardContent() {
+
   const router = useRouter();
   // const [admin, setAdmin] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -45,11 +48,42 @@ export default function DashboardContent() {
   const [dateFilter, setDateFilter] = useState('all'); // 'all', 'today', 'week', 'month'
   const [currentPage, setCurrentPage] = useState(1); // 페이지네이션을 위한 현재 페이지 상태
   const [pagiIndex, setPagiIndex] = useState(0);
-  const [MultiChartData, setMultiChartData] = useState([]);
+  const [rawData, setMultiChartData] = useState([]);
 
   const itemsPerPage = 10; // 페이지당 항목 수
   const { admin } = useAdminInfoStore();
   const { isSuperAdmin, setIsSuperAdmin } = useIsSuperAdminStore();
+
+  const [chartData, setChartData] = useState({ dates: [], counts: [] });
+  useEffect(() => {
+    if (!rawData || rawData.length === 0) return
+    console.log(rawData, 'multiplex');
+    // This effect runs whenever the rawData prop changes
+    const dates = Object.keys(rawData).sort();
+    const counts = dates.map(date => rawData[date]);
+    setChartData({ dates, counts });
+  }, [rawData]);
+
+  const option = {
+    // ... (rest of your chart options)
+
+    xAxis: {
+      type: "category",
+      data: chartData.dates // Use your processed date array
+    },
+    yAxis: {
+      type: "value",
+      name: "총 수료증 개수"
+    },
+    series: [
+      {
+        name: "Certificates Issued",
+        type: "line",
+        smooth: true,
+        data: chartData.counts // Use your processed counts array
+      }
+    ]
+  };
 
 
   useEffect(() => {
@@ -292,9 +326,7 @@ export default function DashboardContent() {
       </div>
     );
   }
-  useEffect(() => {
-    console.log(MultiChartData, 'MultiChartData')
-  }, [MultiChartData])
+
 
 
   // const isSuperAdmin = admin.grade === 2;
@@ -380,7 +412,11 @@ export default function DashboardContent() {
             </div>
             <div className="flex  justify-between gap-6 ">
               <div className="w-[1100px] rounded-2xl " >
-                <MultiXAxisLineChart rawData={MultiChartData } style={{ height: "100%", width: "100%" }} />
+                {/* <MultiXAxisLineChart rawData={MultiChartData } style={{ height: "100%", width: "100%" }} /> */}
+                <div className="p-6 bg-white rounded-xl shadow-md">
+                  <h2 className="text-lg font-semibold mb-4">총 발급 된 수료증 개수</h2>
+                  <ReactECharts option={option} style={{ height: 400 }} />
+                </div>
               </div>
               <div className="w-[350px] h-[300px] md:h-[400px]  rounded-2xl">
                 <DonutPieChart totalCert={totalStats.approvedCount} totalRequest={totalStats.pendingCount} issueRequest={totalStats.issueCount} revokeRequest={totalStats.revokeCount} style={{ height: "100%", width: "100%" }} />
