@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Fragment } from "react";
 import LoadingSpinner from "../../../components/UI/Spinner";
 import Modal from "../../../components/UI/Modal";
 import Input from "../../../components/UI/Input";
 import axios from "axios";
+import Button from "../../../components/UI/Button";
 
 const CopyIcon = ({ className }) => (
   <svg
@@ -40,6 +41,8 @@ export default function LoginHistoryPage() {
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
   const [copiedDid, setCopiedDid] = useState(null);
+  const [activeOrder, setActiveOrder] = useState("newest");
+  const [activeFilter, setActiveFilter] = useState("newest");
 
   useEffect(() => {
     // loadRecords();
@@ -147,7 +150,7 @@ export default function LoginHistoryPage() {
     });
 
   // 페이지네이션된 데이터
-  const paginatedRecords = useMemo(() => {
+  const paginatedRequests = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredRecords.slice(start, start + itemsPerPage);
   }, [filteredRecords, currentPage]);
@@ -162,216 +165,442 @@ export default function LoginHistoryPage() {
     );
   }
 
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-8xl ml-64 px-12">
-        {/* 헤더 */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">사용자 활동 기록</h1>
-          <p className="text-gray-600">
-            로그인 이력과 VC 발급/검증 현황을 확인할 수 있습니다.
-          </p>
+  <div className="w-[calc(100wd - 64px)] bg-deepnavy overflow-hidden pb-10">
+    <div className="min-h-screen ml-64 p-6 sm:p-6">
+      <div className="max-w-8xl space-y-6 px-12 mx-auto">
+        {/* 상단 헤더 */}
+        <div className="mb-8 ">
+          <h1 className="text-2xl sm:text-3xl font-bold text-whiteback mb-2">사용자 목록 확인</h1>
+          <p className="text-whiteback ">사용자의 개인 정보 확인할수 있습니다.</p>
         </div>
 
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-5 rounded-lg shadow border-l-4 border-gray-400">
-            <h3 className="text-sm font-medium text-gray-500">전체 로그인 기록</h3>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-          <div className="bg-white p-5 rounded-lg shadow border-l-4 border-indigo-500">
-            <h3 className="text-sm font-medium text-gray-500">발급된 VC</h3>
-            <p className="text-2xl font-bold text-indigo-600">
-              {stats.totalIssuedVCs}
-            </p>
-          </div>
-          {/* <div className="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
-            <h3 className="text-sm font-medium text-gray-500">검증된 VC</h3>
-            <p className="text-2xl font-bold text-green-600">
-              {stats.totalVerifiedVCs}
-            </p>
-          </div> */}
-        </div>
+        {/* 통계 카드 - 대기중 요청만 표시 */}
+        <div className=" rounded-2xl text-textIcons bg-darkergray gap-4 p-6 mb-6">
+          <h2 className="text-lg font-bold  mb-6">
+            수료증 요청
+          </h2>
+          <div className='grid grid-cols-1 md:grid-cols-3 px-15 gap-30'>
+            <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
+              <div className="mb-6 text-lg font-medium ">전체 사용자</div>
+              <div className="text-3xl  font-medium ">{stats.total}</div>
+            </div>
+            <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
+              <div className="mb-6 text-lg font-medium ">일일 가입 사용자</div>
+              <div className="text-3xl  font-medium ">{stats.approved + stats.rejected || 0}</div>
+            </div>
+            <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
+              <div className="mb-6 text-lg font-medium ">오늘 방문자</div>
+              <div className="text-3xl  font-medium ">{stats.pending || 0}</div>
+            </div>
 
-        {/* 필터 및 검색 */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="사용자 이름 또는 DID 주소로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="newest">최신순</option>
-                <option value="oldest">오래된순</option>
-                {/* <option value="nameAsc">이름 오름차순</option>
-                <option value="nameDesc">이름 내림차순</option> */}
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* 목록 */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredRecords.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <p className="text-lg mb-2">기록이 없습니다</p>
-              <p className="text-sm">검색 조건에 맞는 기록이 없습니다.</p>
+        {/* 검색 및 필터 */}
+        <div className="bg-darkergray rounded-2xl min-h-200 shadow-sm border border-gray-200">
+          {/* <div className=" rounded-xl border border-gray-200 shadow-sm mb-6"> */}
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-textIcons">가입 요청 관리</h3>
             </div>
-          ) : (
-            <div>
-              {/* 헤더 */}
-              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] text-left gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div>번호</div>
-                  <div>사용자 이름</div>
-                  <div>사용자 ID</div>
-                  <div>사용자 DID</div>
-                  <div className="text-left">생년월일</div>
-                </div>
+            {/* 검색 및 액션 */}
+            <div className='relative mb-8'>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
+              <input
+                type="text"
+                placeholder="수료증명, 사용자명으로 검색..."
+                // value={searchTerm}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
+              /></div>
+            <div className="flex flex-wrap gap-2 items-center justify-around">
+          
+              <div className="flex gap-2 items-center ">
+                <h4 className=" font-medium  ">정렬 기준: </h4>
+                <button
+                  onClick={(e) => { setSortBy('newest'); setActiveOrder('newest') }}
+                  className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeOrder === 'newest'
+                    ? 'bg-deepnavy text-whiteback shadow-xl'
+                    : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                    }`}
+                >
+                  최신순
+                  {/* 전체 ({getFilterCount('all')}) */}
+                </button>
+                <button
+                  onClick={(e) => { setSortBy('oldest'); setActiveOrder('oldest') }}
+                  className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeOrder === 'oldest'
+                    ? 'bg-deepnavy text-whiteback shadow-xl'
+                    : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                    }`}
+                >
+                  오래된순
+                  {/* 전체 ({getFilterCount('all')}) */}
+                </button>
 
-              {/* 리스트 */}
-              <div className="divide-y divide-gray-200">
-                {paginatedRecords.map((rec, index) => (
-                  <div key={rec.id} className="px-4 py-4 md:px-6 hover:bg-gray-50 transition-colors duration-150">
-                    {/* Desktop View */}
-                    <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] items-center gap-4 text-sm">
-                      <div className="text-gray-500">{(currentPage - 1) * itemsPerPage + index + 1}</div>
-                      <div className="flex items-center gap-3">
-                        <img src={rec.imgPath || '/images/default-avatar.png'} className="w-9 h-9 rounded-full object-cover" alt={`${rec.userName} profile`} />
-                        <span className="font-medium text-gray-900">{rec.userName}</span>
-                      </div>
-                      <div className="text-gray-700">{rec.userId}</div>
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <span className="truncate">{rec.didAddress}</span>
-                        <button onClick={() => handleCopy(rec.didAddress)} className="text-gray-400 hover:text-blue-600 transition-colors">
-                          {copiedDid === rec.didAddress ? (
-                            <span className="text-xs text-blue-600">Copied!</span>
-                          ) : (
-                            <CopyIcon className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                      <div className="text-gray-700">{rec.birthDate}</div>
-                    </div>
+              </div>
+              <div className="w-200"></div>
+            </div>
 
-                    {/* Mobile View */}
-                    <div className="md:hidden">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={rec.imgPath || '/images/default-avatar.png'} className="w-10 h-10 rounded-full object-cover" alt={`${rec.userName} profile`} />
-                          <div>
-                            <p className="font-bold text-gray-900">{rec.userName}</p>
-                            <p className="text-xs text-gray-500">{rec.userId}</p>
+          </div>
+          <div className="  min-h-150 p-6 flex flex-col justify-between rounded-lg shadow-lg text-textIcons overflow-hidden">
+            <div className='space-y-3'>
+              {loading ? (
+                <div className="p-12 text-center">
+                  <LoadingSpinner message="요청 목록 로딩 중..." />
+                </div>
+              ) : paginatedRequests.length === 0 ? (
+                <div className="p-12 text-center ">
+                  <p className="text-lg mb-2">처리할 요청이 없습니다</p>
+                  <p className="">선택한 조건에 맞는 요청이 없습니다.</p>
+                </div>
+              ) : ( 
+                <Fragment >
+                  <div className="hidden  md:grid grid-cols-[80px_130px_130px_130px_130px_1fr_1fr_130px] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium  uppercase tracking-wider">
+
+                    <div className="col-span-1">번호</div>
+                    <div className="col-span-1">이름</div>
+                    <div className="col-span-1">닉네임</div>
+                    <div className="col-span-1">아이디</div>
+                    <div className="col-span-1">생년월일</div>
+                    <div className="col-span-1">주소</div>
+                    <div className="col-span-1">사용자 DID</div>
+                    <div className="col-span-1">가입 날짜</div>
+                  </div>
+                  <div className="space-y-2 text-center divide-gray-200">
+                    {paginatedRequests.map((request, index) => (
+                      <div key={request.userId} className="bg-white px-6 rounded-lg py-4 text-sm hover:bg-gray-50 transition-colors">
+                        <div className="grid grid-cols-1 md:grid-cols-[80px_130px_130px_130px_130px_1fr_1fr_130px] text-center gap-4 items-center">
+                          {/* Mobile View */}
+                          <div>{((currentPage - 1) * itemsPerPage) + index + 1}</div>
+                          <div className="md:hidden space-y-3">
+                            <div className="flex items-center justify-between">
+                              <img src={request.imgPath || '/images/default-avatar.png'} className="w-9 h-9 rounded-full object-cover" alt={`${request.userName} profile`} />
+                              <div className="font-medium ">{request.userName}</div>
+                              <span className=''>
+                                사용자 ID : {request.userId}
+                              </span>
+                            </div>
+                            <div className=" ">회사명 : {request.company}</div>
+                            <div className=" ">요청일 : {formatDate(request.createdAt)}</div>
+                            <div className="flex gap-2 pt-2">
+                              <Button onClick={() => handleAction(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded ">승인</Button>
+                              <Button onClick={() => handleAction(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded ">거절</Button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          #{ (currentPage - 1) * itemsPerPage + index + 1 }
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-2 text-sm">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-gray-500">DID Address</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-800 truncate">{rec.didAddress}</span>
-                            <button onClick={() => handleCopy(rec.didAddress)} className="text-gray-400 hover:text-blue-600">
-                              {copiedDid === rec.didAddress ? (
+
+                          {/* Desktop View */}
+                          <div className="flex justify-center items-center gap-2">
+                            <img src={request.imgPath || '/images/default-avatar.png'} className="w-9 h-9 rounded-full object-cover" alt={`${request.userName} profile`} />
+                            <span className="hidden md:block col-span-1  font-medium ">{request.userName}</span>
+                          </div>
+                          <div className=" ">{request.nickName}</div>
+                          <div className="hidden md:block col-span-1">
+                            <span >
+                              {request.userId}
+                            </span>
+                          </div>
+                          <div className="hidden md:block col-span-1  ">{(request.birthDate)}</div>
+                          <div className="hidden md:block col-span-1  ">{(request.address)}</div>
+                          <div className="hidden  md:flex col-span-1 w-[calc(100%-40px)] justify-center overflow-ellipsis overflow-hidden ">
+                            <span className="truncate ">
+                              {request.didAddress}
+                            </span>
+                            <button onClick={() => handleCopy(request.didAddress)} className="cursor-pointer hover:text-blue-600 transition-colors">
+                              {copiedDid === request.didAddress ? (
                                 <span className="text-xs text-blue-600">Copied!</span>
                               ) : (
                                 <CopyIcon className="w-4 h-4" />
                               )}
                             </button>
                           </div>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-gray-500">생년월일</span>
-                          <span className="text-gray-800">{rec.birthDate}</span>
+                              <div className="hidden md:block col-span-1  ">{(request.createdAt).split('T')[0]}</div>
+                              
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* 페이지네이션 - 개선된 버전 */}
-              {totalPages > 1 && (
-                <div className="flex flex-col items-center gap-4 py-4 px-6 border-t">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
-                    >
-                      이전
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5 || currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        if (pageNum > totalPages) return null;
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`px-3 py-1 rounded-md text-sm ${currentPage === pageNum
-                                ? 'bg-blue-600 text-white font-bold'
-                                : 'border border-gray-300 hover:bg-gray-100'
-                              }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
-                    >
-                      다음
-                    </button>
-                  </div>
-                </div>
+                </Fragment>
               )}
             </div>
-          )}
+            <div>
+              {/* 페이지네이션 */}
+              {totalPages && (
+                <div className=" mt-12 mb-15 flex justify-center items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
+                  >
+                    이전
+                  </button>
+
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-1 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
+                            ? 'bg-borderbackblue text-white '
+                            : ' hover:bg-gray-50'
+                            }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
+                  >
+                    다음
+                  </button>
+                </div>
+              )}</div>
+          </div>
         </div>
       </div>
-
-      {/* 결과 모달 */}
-      <Modal isOpen={showResultModal} onClose={closeResultModal}>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">알림</h3>
-          <div className="text-gray-600 mb-6 whitespace-pre-line">
-            {resultMessage}
-          </div>
-          <div className="flex justify-end">
-            <button
-              onClick={closeResultModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
-  );
+
+
+
+    {/* {verified && <Processing ImageName={"/images/verified.gif"} failed={false} />}
+    {load && <Processing ImageName={"/images/Processing.gif"} failed={false} className="mb-8" />}
+    {iserror && <Processing ImageName={"/images/failed.png"} failed={true} className="mb-8" />} */}
+  </div>
+);
+
+  // return (
+  //   <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+  //     <div className="max-w-8xl ml-64 px-12">
+  //       {/* 헤더 */}
+  //       <div className="mb-6">
+  //         <h1 className="text-2xl sm:text-3xl font-bold mb-2">사용자 목록 확인</h1>
+  //         <p className="">
+  //           사용자의 개인
+  //         </p>
+  //       </div>
+
+  //       {/* 통계 카드 */}
+  //       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+  //         <div className="bg-white p-5 rounded-lg shadow border-l-4 border-gray-400">
+  //           <h3 className="text-sm font-medium ">전체 로그인 기록</h3>
+  //           <p className="text-2xl font-bold ">{stats.total}</p>
+  //         </div>
+  //         <div className="bg-white p-5 rounded-lg shadow border-l-4 border-indigo-500">
+  //           <h3 className="text-sm font-medium ">발급된 VC</h3>
+  //           <p className="text-2xl font-bold text-indigo-600">
+  //             {stats.totalIssuedVCs}
+  //           </p>
+  //         </div>
+  //         {/* <div className="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
+  //           <h3 className="text-sm font-medium ">검증된 VC</h3>
+  //           <p className="text-2xl font-bold text-green-600">
+  //             {stats.totalVerifiedVCs}
+  //           </p>
+  //         </div> */}
+  //       </div>
+
+  //       {/* 필터 및 검색 */}
+  //       <div className="bg-white p-4 rounded-lg shadow mb-6">
+  //         <div className="flex flex-col sm:flex-row gap-4">
+  //           <div className="flex-1">
+  //             <Input
+  //               placeholder="사용자 이름 또는 DID 주소로 검색..."
+  //               value={searchTerm}
+  //               onChange={(e) => setSearchTerm(e.target.value)}
+  //               className="h-10"
+  //             />
+  //           </div>
+  //           <div className="flex gap-2">
+  //             <select
+  //               value={sortBy}
+  //               onChange={(e) => setSortBy(e.target.value)}
+  //               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+  //             >
+  //               <option value="newest">최신순</option>
+  //               <option value="oldest">오래된순</option>
+  //               {/* <option value="nameAsc">이름 오름차순</option>
+  //               <option value="nameDesc">이름 내림차순</option> */}
+  //             </select>
+  //           </div>
+  //         </div>
+  //       </div>
+
+  //       {/* 목록 */}
+  //       <div className="bg-white rounded-lg shadow overflow-hidden">
+  //         {filteredRecords.length === 0 ? (
+  //           <div className="p-12 text-center ">
+  //             <p className="text-lg mb-2">기록이 없습니다</p>
+  //             <p className="text-sm">검색 조건에 맞는 기록이 없습니다.</p>
+  //           </div>
+  //         ) : (
+  //           <div>
+  //             {/* 헤더 */}
+  //             <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+  //               <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] text-left gap-4 text-xs font-medium  uppercase tracking-wider">
+  //                 <div>번호</div>
+  //                 <div>사용자 이름</div>
+  //                 <div>사용자 ID</div>
+  //                 <div>사용자 DID</div>
+  //                 <div className="text-left">생년월일</div>
+  //               </div>
+  //             </div>
+
+  //             {/* 리스트 */}
+  //             <div className="divide-y divide-gray-200">
+  //               {paginatedRecords.map((rec, index) => (
+  //                 <div key={rec.id} className="px-4 py-4 md:px-6 hover:bg-gray-50 transition-colors duration-150">
+  //                   {/* Desktop View */}
+  //                   <div className="hidden md:grid md:grid-cols-[50px_1fr_1fr_2fr_1fr] items-center gap-4 text-sm">
+  //                     <div className="">{(currentPage - 1) * itemsPerPage + index + 1}</div>
+  //                     <div className="flex items-center gap-3">
+  //                       <img src={rec.imgPath || '/images/default-avatar.png'} className="w-9 h-9 rounded-full object-cover" alt={`${rec.userName} profile`} />
+  //                       <span className="font-medium ">{rec.userName}</span>
+  //                     </div>
+  //                     <div className="">{rec.userId}</div>
+  //                     <div className="flex items-center gap-2 ">
+  //                       <span className="truncate">{rec.didAddress}</span>
+  //                       <button onClick={() => handleCopy(rec.didAddress)} className=" hover:text-blue-600 transition-colors">
+  //                         {copiedDid === rec.didAddress ? (
+  //                           <span className="text-xs text-blue-600">Copied!</span>
+  //                         ) : (
+  //                           <CopyIcon className="w-4 h-4" />
+  //                         )}
+  //                       </button>
+  //                     </div>
+  //                     <div className="">{rec.birthDate}</div>
+  //                   </div>
+
+  //                   {/* Mobile View */}
+  //                   <div className="md:hidden">
+  //                     <div className="flex items-center justify-between">
+  //                       <div className="flex items-center gap-3">
+  //                         <img src={rec.imgPath || '/images/default-avatar.png'} className="w-10 h-10 rounded-full object-cover" alt={`${rec.userName} profile`} />
+  //                         <div>
+  //                           <p className="font-bold ">{rec.userName}</p>
+  //                           <p className="text-xs ">{rec.userId}</p>
+  //                         </div>
+  //                       </div>
+  //                       <div className="text-xs ">
+  //                         #{ (currentPage - 1) * itemsPerPage + index + 1 }
+  //                       </div>
+  //                     </div>
+  //                     <div className="mt-4 space-y-2 text-sm">
+  //                       <div className="flex flex-col">
+  //                         <span className="text-xs font-medium ">DID Address</span>
+  //                         <div className="flex items-center gap-2">
+  //                           <span className=" truncate">{rec.didAddress}</span>
+  //                           <button onClick={() => handleCopy(rec.didAddress)} className=" hover:text-blue-600">
+  //                             {copiedDid === rec.didAddress ? (
+  //                               <span className="text-xs text-blue-600">Copied!</span>
+  //                             ) : (
+  //                               <CopyIcon className="w-4 h-4" />
+  //                             )}
+  //                           </button>
+  //                         </div>
+  //                       </div>
+  //                       <div className="flex flex-col">
+  //                         <span className="text-xs font-medium ">생년월일</span>
+  //                         <span className="">{rec.birthDate}</span>
+  //                       </div>
+  //                     </div>
+  //                   </div>
+  //                 </div>
+  //               ))}
+  //             </div>
+
+  //             {/* 페이지네이션 - 개선된 버전 */}
+  //             {totalPages > 1 && (
+  //               <div className="flex flex-col items-center gap-4 py-4 px-6 border-t">
+  //                 <div className="flex items-center gap-2">
+  //                   <button
+  //                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+  //                     disabled={currentPage === 1}
+  //                     className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
+  //                   >
+  //                     이전
+  //                   </button>
+
+  //                   <div className="flex items-center gap-1">
+  //                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+  //                       let pageNum;
+  //                       if (totalPages <= 5 || currentPage <= 3) {
+  //                         pageNum = i + 1;
+  //                       } else if (currentPage >= totalPages - 2) {
+  //                         pageNum = totalPages - 4 + i;
+  //                       } else {
+  //                         pageNum = currentPage - 2 + i;
+  //                       }
+  //                       if (pageNum > totalPages) return null;
+  //                       return (
+  //                         <button
+  //                           key={pageNum}
+  //                           onClick={() => setCurrentPage(pageNum)}
+  //                           className={`px-3 py-1 rounded-md text-sm ${currentPage === pageNum
+  //                               ? 'bg-blue-600 text-white font-bold'
+  //                               : 'border border-gray-300 hover:bg-gray-100'
+  //                             }`}
+  //                         >
+  //                           {pageNum}
+  //                         </button>
+  //                       );
+  //                     })}
+  //                   </div>
+
+  //                   <button
+  //                     onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+  //                     disabled={currentPage === totalPages}
+  //                     className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100"
+  //                   >
+  //                     다음
+  //                   </button>
+  //                 </div>
+  //               </div>
+  //             )}
+  //           </div>
+  //         )}
+  //       </div>
+  //     </div>
+
+  //     {/* 결과 모달 */}
+  //     <Modal isOpen={showResultModal} onClose={closeResultModal}>
+  //       <div className="p-6">
+  //         <h3 className="text-lg font-semibold mb-4">알림</h3>
+  //         <div className=" mb-6 whitespace-pre-line">
+  //           {resultMessage}
+  //         </div>
+  //         <div className="flex justify-end">
+  //           <button
+  //             onClick={closeResultModal}
+  //             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+  //           >
+  //             확인
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </Modal>
+  //   </div>
+  // );
 }

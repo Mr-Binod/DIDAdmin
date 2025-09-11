@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <head>
         {/* 스크롤바 스타일을 위한 CSS 추가 */}
-        <style jsx="true">{`
+        <style jsx global>{`
           /* 전체 스크롤바 스타일 */
           ::-webkit-scrollbar {
             width: 15px; /* 스크롤바 너비 */
@@ -33,7 +33,7 @@ export default function RootLayout({ children }) {
           
           /* 스크롤바 트랙(배경) 스타일 */
           ::-webkit-scrollbar-track {
-            background-color: #FAFCFF; /* bg-amber-500과 비슷한 색상 */
+            // background-color: #FAFCFF; /* bg-amber-500과 비슷한 색상 */
             border-radius: 15px 15px 15px 15px; /* 둥근 모서리 */
           }
           
@@ -51,29 +51,26 @@ export default function RootLayout({ children }) {
         `}</style>
       </head>
       <body  >
-      <QueryClientProvider client={queryClient}>
-        {hideLayout ? (
-          <>{children}</>
-        ) : (
-        <div className='w-screen h-[100vh] bg-deepnavy' >
-      <div className='    h-[100vh] border-12 rounded-4xl overflow-hidden  border-deepnavy overflow-y-scroll '>
-        {/* <div className='border-5 rounded-3xl border-grayblack overflow-y-scroll h-[calc(100vh-24px)]' > */}
-        
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex flex-col flex-1">
-              {/* 전역 상단 AdminNav */}
-              <AdminNav />
-              <main className="flex-1">{children}</main>
-              {/* <Footer /> */}
-            </div>
-          </div>
-        
-      
-      {/* </div> */}
-      </div>
-      </div>)}
-      </QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          {hideLayout ? (
+            <>{children}</>
+          ) : (
+            <div className='w-screen h-[100vh] bg-deepnavy' >
+              <div className='    h-[100vh] border-12 overflow-y-scroll overflow-hidden  border-deepnavy  '>
+                {/* <div className=' overflow-y-scroll h-[calc(100vh-24px)]' > */}
+                  <div className="flex min-h-screen">
+                    <Sidebar />
+                    <div className="flex flex-col flex-1">
+                      {/* 전역 상단 AdminNav */}
+                      <AdminNav />
+                      <main className="flex-1">{children}</main>
+                      {/* <Footer /> */}
+                    </div>
+                  </div>
+                </div>
+              {/* </div> */}
+            </div>)}
+        </QueryClientProvider>
       </body>
     </html>
   );

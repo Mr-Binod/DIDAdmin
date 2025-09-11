@@ -31,6 +31,8 @@ export default function AdminCertificateRequestsPage() {
   const [load, setLoad] = useState(false);
   const [verified, setVerified] = useState(false);
   const [iserror, setIserror] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeOrder, setActiveOrder] = useState('desc');
 
   const itemsPerPage = 10; // 5개로 고정
 
@@ -159,11 +161,11 @@ export default function AdminCertificateRequestsPage() {
   const getRequestTypeBadge = (request) => {
     switch (request) {
       case 'issue':
-        return 'bg-blue-100 text-blue-700 px-2 py-1 rounded  font-medium';
+        return 'bg-borderbackblue text-whiteback px-6 py-2 rounded-lg  font-medium';
       case 'revoke':
-        return 'bg-purple-100 text-purple-700 px-2 py-1 rounded  font-medium';
+        return 'bg-red-800 text-whiteback px-6 py-2 rounded  font-medium';
       default:
-        return 'bg-gray-100 text-gray-700 px-2 py-1 rounded  font-medium';
+        return ' px-2 py-1 rounded  font-medium';
     }
   };
 
@@ -211,10 +213,10 @@ export default function AdminCertificateRequestsPage() {
           // setResultMessage('거절 사유를 입력해주세요.');
           // setShowResultModal(true);
           await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/rejectrevoke`, {
-            
-              userId: requestToProcess.userId,
-              certName: requestToProcess.certificateName
-            
+
+            userId: requestToProcess.userId,
+            certName: requestToProcess.certificateName
+
           })
           console.log(requestToProcess, ' requestToProcess', processType)
           setLoad(false);
@@ -227,10 +229,10 @@ export default function AdminCertificateRequestsPage() {
         }
 
         await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/rejectissue`, {
-        
-            userId: requestToProcess.userId,
-            certName: requestToProcess.certificateName
-          
+
+          userId: requestToProcess.userId,
+          certName: requestToProcess.certificateName
+
         })
         setLoad(false);
         setVerified(true)
@@ -242,10 +244,10 @@ export default function AdminCertificateRequestsPage() {
       }
       if (requestToProcess.request === 'revoke') {
         await axios.patch(`${process.env.NEXT_PUBLIC_BASE_URL}/user/approverevoke`, {
-          
-            userId: requestToProcess.userId,
-            certName: requestToProcess.certificateName
-          
+
+          userId: requestToProcess.userId,
+          certName: requestToProcess.certificateName
+
         })
         setLoad(false);
         setVerified(true)
@@ -331,71 +333,117 @@ export default function AdminCertificateRequestsPage() {
   }
 
   return (
-    <div className="w-[calc(100wd - 64px)] bg-lightbackblue overflow-hidden pb-10">
-      <div className="min-h-screen ml-64 p-4 sm:p-6">
-        <div className="max-w-8xl px-12 mx-auto">
+    <div className="w-[calc(100wd - 64px)] bg-deepnavy overflow-hidden pb-10">
+      <div className="min-h-screen ml-64 p-6 sm:p-6">
+        <div className="max-w-8xl space-y-6 px-12 mx-auto">
           {/* 상단 헤더 */}
-          <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">수료증 요청 관리</h1>
-            <p className="text-gray-600">사용자들의 수료증 발급 및 폐기 요청을 관리하세요.</p>
+          <div className="mb-8 ">
+            <h1 className="text-2xl sm:text-3xl font-bold text-whiteback mb-2">수료증 요청 관리</h1>
+            <p className="text-whiteback ">사용자들의 수료증 발급 및 폐기 요청을 관리하세요.</p>
           </div>
 
           {/* 통계 카드 - 대기중 요청만 표시 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
-              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className=" text-gray-500">전체 대기중 요청</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">{stats.issueCount}</div>
-              <div className=" text-gray-500">발급 대기중</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl text-center border border-gray-200 shadow-sm">
-              <div className="text-2xl font-bold text-purple-600">{stats.revokeCount}</div>
-              <div className=" text-gray-500">폐기 대기중</div>
+          <div className=" rounded-2xl text-textIcons bg-darkergray gap-4 p-6 mb-6">
+            <h2 className="text-lg font-bold  mb-6">
+              수료증 요청
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-4 px-15 gap-20'>
+              <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
+                <div className="mb-6 text-lg font-medium ">전체 처리됭 요청</div>
+                <div className="text-3xl  font-medium ">{stats.total}</div>
+              </div>
+              <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
+                <div className="mb-6 text-lg font-medium ">전체 대기중 요청</div>
+                <div className="text-3xl  font-medium ">{stats.total}</div>
+              </div>
+              <div className="bg-darkergray p-4 rounded-xl text-center border border-gray-200 shadow-2xl">
+                <div className="mb-6 text-lg font-medium ">발급 대기중</div>
+                <div className="text-3xl   font-medium ">{stats.issueCount}</div>
+              </div>
+              <div className="bg-darkergray p-4 rounded-xl text-center border border-gray-200 shadow-2xl">
+                <div className="mb-6 text-lg font-medium ">폐기 대기중</div>
+                <div className="text-3xl   font-medium ">{stats.revokeCount}</div>
+              </div>
             </div>
           </div>
 
           {/* 검색 및 필터 */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
-            <div className="p-4">
+          <div className="bg-darkergray rounded-2xl min-h-200 shadow-sm border border-gray-200">
+            {/* <div className=" rounded-xl border border-gray-200 shadow-sm mb-6"> */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-textIcons">수료증 관리</h3>
+              </div>
               {/* 검색 및 액션 */}
-              <div className="flex flex-col md:flex-row gap-4 mb-4">
-                <div className="flex-1">
-                  <Input
-                    type="text"
-                    placeholder="수료증명, 사용자명, 이메일 검색..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              <div className='relative mb-8'>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-                <div className="flex gap-2">
-                  <select
-                    value={requestTypeFilter}
-                    onChange={(e) => setRequestTypeFilter(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 "
-                  >
-                    <option value="all">전체 요청 ({stats.total || 0})</option>
-                    <option value="issue">발급 요청 ({stats.issueCount || 0})</option>
-                    <option value="revoke">폐기 요청 ({stats.revokeCount || 0})</option>
-                  </select>
+                <input
+                  type="text"
+                  placeholder="수료증명, 사용자명으로 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
+                /></div>
+              <div className="flex flex-wrap gap-2 items-center justify-around">
+                <div className='flex items-center gap-2'>
+                  <h4 className=" font-medium text-gray-700 ">상태별 필터 : </h4>
                   <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`px-4 py-2 border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-300 hover:bg-gray-50'
+                    onClick={(e) => { setRequestTypeFilter('all'); setActiveFilter('all') }}
+                    className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'all'
+                      ? 'bg-deepnavy text-whiteback shadow-xl'
+                      : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                      }`}
+                  >전체 요청 
+                    {/* 전체 ({getFilterCount('all')}) */}
+                  </button>
+                  <button
+                    onClick={(e) => { setRequestTypeFilter('issue'); setActiveFilter('issue') }}
+                    className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'issue'
+                      ? 'bg-deepnavy text-whiteback shadow-xl'
+                      : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                      }`}
+                  >발급 요청
+                    {/* 전체 ({getFilterCount('all')}) */}
+                  </button>
+                  <button
+                    onClick={(e) => { setRequestTypeFilter('revoke'); setActiveFilter('revoke') }}
+                    className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'revoke'
+                      ? 'bg-red-900 text-whiteback shadow-xl'
+                      : 'bg-lightbackblue text-textIcons hover:bg-red-900 border border-gray-200 hover:text-whiteback'
+                      }`}
+                  >폐기 요청 
+                    {/* 전체 ({getFilterCount('all')}) */}
+                  </button>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <h4 className=" font-medium text-gray-700 ">시간별 필터: </h4>
+                  <button
+                    onClick={(e) => { setSortOrder('desc'); setActiveOrder('desc') }}
+                    className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeOrder === 'desc'
+                      ? 'bg-deepnavy text-whiteback shadow-xl'
+                      : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                       }`}
                   >
-                    필터
+                    최신순
+                    {/* 전체 ({getFilterCount('all')}) */}
                   </button>
                   <button
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 "
+                    onClick={(e) => { setSortOrder('asc'); setActiveOrder('asc') }}
+                    className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeOrder === 'asc'
+                      ? 'bg-deepnavy text-whiteback shadow-xl'
+                      : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                      }`}
                   >
-                    {sortOrder === 'asc' ? '오래된순' : '최신순'}
+                    오래된순
+                    {/* 전체 ({getFilterCount('all')}) */}
                   </button>
+
                 </div>
               </div>
-
               {/* 확장 필터 */}
               {showFilters && (
                 <div className="border-t border-gray-200 pt-4">
@@ -436,136 +484,140 @@ export default function AdminCertificateRequestsPage() {
                   </div>
                 </div>
               )}
-
             </div>
-          </div>
+            <div className="  min-h-150 p-6 flex flex-col justify-between rounded-lg shadow overflow-hidden">
+              <div className='space-y-3'>
+                {isLoading ? (
+                  <div className="p-12 text-center">
+                    <LoadingSpinner message="요청 목록 로딩 중..." />
+                  </div>
+                ) : paginatedRequests.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500">
+                    <p className="text-lg mb-2">처리할 요청이 없습니다</p>
+                    <p className="">선택한 조건에 맞는 요청이 없습니다.</p>
+                  </div>
+                ) : (
+                  <Fragment  >
+                    <div className="hidden md:grid grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-gray-500 uppercase tracking-wider">
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {isLoading ? (
-              <div className="p-12 text-center">
-                <LoadingSpinner message="요청 목록 로딩 중..." />
-              </div>
-            ) : paginatedRequests.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <p className="text-lg mb-2">처리할 요청이 없습니다</p>
-                <p className="">선택한 조건에 맞는 요청이 없습니다.</p>
-              </div>
-            ) : (
-              <Fragment>
-                <div className="hidden md:grid grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-gray-500 uppercase tracking-wider">
-
-                  <div className="col-span-1">번호</div>
-                  <div className="col-span-1">요청자 이름</div>
-                  <div className="col-span-1">요청자 아이디</div>
-                  <div className="col-span-1">요청 유형</div>
-                  <div className="col-span-1">수료증명</div>
-                  <div className="col-span-1">요청일</div>
-                  <div className="col-span-1 text-center">처리</div>
-                </div>
-                <div className="divide-y  divide-gray-200">
-                  {paginatedRequests.map((request, index) => (
-                    <div key={request.id} className="px-6 py-4 text-sm hover:bg-gray-50 transition-colors">
-                      <div className="grid grid-cols-1 md:grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] text-center gap-4 items-center">
-                        {/* Mobile View */}
-                        <div>{((currentPage -1) * itemsPerPage) + index + 1}</div>
-                        <div className="md:hidden space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium text-gray-900">{request.userName}</div>
-                            <span className={getRequestTypeBadge(request.status)}>
-                              {getRequestTypeText(request.status)}
-                            </span>
-                          </div>
-
-                          <div className=" text-gray-800">{request.certificateName}</div>
-                          <div className=" text-gray-500">요청일: {formatDate(request.createdAt)}</div>
-                          <div className="flex gap-2 pt-2">
-                            <Button onClick={() => openProcessModal(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded ">승인</Button>
-                            <Button onClick={() => openProcessModal(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded ">거절</Button>
-                          </div>
-                        </div>
-
-                        {/* Desktop View */}
-                        <div className="hidden md:block col-span-1  font-medium text-gray-900">{request.userName}</div>
-                        <div className=" text-gray-800">{request.userId}</div>
-                        <div className="hidden md:block col-span-1">
-                          <span className={getRequestTypeBadge(request.request)}>
-                            {getRequestTypeText(request.request)}
-                          </span>
-                        </div>
-                        <div className="hidden md:block col-span-1  text-gray-800">{request.certificateName}</div>
-                        <div className="hidden md:block col-span-1  text-gray-500">{formatDate(request.createdAt)}</div>
-                        <div className="hidden md:flex col-span-1 justify-center gap-2">
-                          <Button
-                            onClick={() => openProcessModal(request, 'approve')}
-                            disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                            className="bg-green-100 text-green-800 hover:bg-green-200 px-6 py-2 cursor-pointer rounded-lg"
-                          >
-                            승인
-                          </Button>
-                          <Button
-                            onClick={() => openProcessModal(request, 'reject')}
-                            disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                            className="bg-red-100 text-red-800 hover:bg-red-200 px-6 py-2 cursor-pointer rounded-lg"
-                          >
-                            거절
-                          </Button>
-                        </div>
-                      </div>
+                      <div className="col-span-1">번호</div>
+                      <div className="col-span-1">요청자 이름</div>
+                      <div className="col-span-1">요청자 아이디</div>
+                      <div className="col-span-1">요청 유형</div>
+                      <div className="col-span-1">수료증명</div>
+                      <div className="col-span-1">요청일</div>
+                      <div className="col-span-1 text-center">처리</div>
                     </div>
-                  ))}
-                </div>
-              </Fragment>
-            )}
-          </div>
+                    <div className="space-y-2  divide-gray-200">
+                      {paginatedRequests.map((request, index) => (
+                        <div key={request.id} className="bg-white px-6 rounded-lg py-4 text-sm hover:bg-gray-50 transition-colors">
+                          <div className="grid grid-cols-1 md:grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] text-center gap-4 items-center">
+                            {/* Mobile View */}
+                            <div>{((currentPage - 1) * itemsPerPage) + index + 1}</div>
+                            <div className="md:hidden space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium text-gray-900">{request.userName}</div>
+                                <span className={getRequestTypeBadge(request.status)}>
+                                  {getRequestTypeText(request.status)}
+                                </span>
+                              </div>
 
-          {/* 페이지네이션 */}
-          {totalPages && (
-            <div className=" mt-12  flex justify-center items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
-              >
-                이전
-              </button>
+                              <div className=" text-gray-800">{request.certificateName}</div>
+                              <div className=" text-gray-500">요청일: {formatDate(request.createdAt)}</div>
+                              <div className="flex gap-2 pt-2">
+                                <Button onClick={() => openProcessModal(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded ">승인</Button>
+                                <Button onClick={() => openProcessModal(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded ">거절</Button>
+                              </div>
+                            </div>
 
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
+                            {/* Desktop View */}
+                              <div className="flex items-center gap-2 col-span-1">
+                              <img src={request.ImagePath} className="w-10 h-10 rounded-full" alt="" />
+                              <span className="hidden md:block col-span-1  font-medium ">{request.userName}</span>
 
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-4 py-2 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
-                        ? 'bg-borderbackblue text-white '
-                        : ' hover:bg-gray-50'
-                        }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                            </div>
+                            <div className=" text-gray-800">{request.userId}</div>
+                            <div className="hidden md:block col-span-1">
+                              <span className={getRequestTypeBadge(request.request)}>
+                                {getRequestTypeText(request.request)}
+                              </span>
+                            </div>
+                            <div className="hidden md:block col-span-1  text-gray-800">{request.certificateName}</div>
+                            <div className="hidden md:block col-span-1  text-gray-500">{formatDate(request.createdAt)}</div>
+                            <div className="hidden md:flex col-span-1 justify-center gap-2">
+                              <Button
+                                onClick={() => openProcessModal(request, 'approve')}
+                                disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
+                                className="bg-deepnavy text-whiteback hover:bg-borderbackblue px-6 py-2 cursor-pointer rounded-lg"
+                              >
+                                승인
+                              </Button>
+                              <Button
+                                onClick={() => openProcessModal(request, 'reject')}
+                                disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
+                                className="bg-red-900 text-whiteback hover:bg-red-700 px-6 py-2 cursor-pointer rounded-lg"
+                              >
+                                거절
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Fragment>
+                )}
               </div>
+              <div>
+                {/* 페이지네이션 */}
+                {totalPages && (
+                  <div className=" mt-12 mb-15 flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
+                    >
+                      이전
+                    </button>
 
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
-              >
-                다음
-              </button>
+                    <div className="flex gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
+                              ? 'bg-borderbackblue text-white '
+                              : ' hover:bg-gray-50'
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
+                    >
+                      다음
+                    </button>
+                  </div>
+                )}</div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

@@ -51,7 +51,7 @@ export default function DonutPieChart({totalCert, totalRequest, issueRequest, re
     return (
         <div className=" flex justify-center items-center ">
             <div className="p-6 bg-white rounded-xl shadow-md">
-                <h2 className="text-lg font-semibold mb-4">수료증 파이차트</h2>
+                <h2 className="text-lg font-semibold mb-4">일일 수료증 가이드</h2>
                 <ReactECharts option={option} style={{ height: 400, width: 300 }} />
             </div>
         </div>

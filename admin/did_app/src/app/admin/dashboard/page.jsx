@@ -27,6 +27,12 @@ export default function DashboardContent() {
     issueCount: 0,
     revokeCount: 0,
   })
+  const [alltotalStats, setAllTotalStats] = useState({
+    pendingCount: 0,
+    approvedCount: 0,
+    issueCount: 0,
+    revokeCount: 0,
+  })
 
   const [stats, setStats] = useState({
     // 슈퍼관리자용 통계
@@ -154,20 +160,44 @@ export default function DashboardContent() {
 
   useEffect(() => {
 
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const newtoday = new Date(today).toLocaleDateString('ko-KR');
+    const newDailyFiltered = recentProcessed.filter(req => {
+      const processedDate = new Date(req.createdAt).toLocaleDateString('ko-KR');
+      console.log(req, 'processedDate', newtoday.toString(), processedDate)
+      const d1 = new Date(processedDate)
+      const d2 = new Date(newtoday)
+      console.log(d1 >= d2, 'd1,d2')
+      // if(processedDate >= today) return 
+      return d1 >= d2;
+    })
 
-    // const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-    console.log(recentProcessed, '111recentProcessed')
-    const approvedCount = recentProcessed.filter(req => req.status === 'approved')
-    const pendingCount = recentProcessed.filter(req => req.status === 'pending').length;
-    const issueCount = recentProcessed.filter(req => req.status === 'pending' && req.request === 'issue').length;
-    const revokeCount = recentProcessed.filter(req => req.status === 'pending' && req.request === 'revoke').length;
+    console.log(newDailyFiltered, 'newDailyFiltered')
+    const approvedCount = newDailyFiltered.filter(req => req.status === 'approved')
+    const pendingCount = newDailyFiltered.filter(req => req.status === 'pending').length;
+    const issueCount = newDailyFiltered.filter(req => req.status === 'pending' && req.request === 'issue').length;
+    const revokeCount = newDailyFiltered.filter(req => req.status === 'pending' && req.request === 'revoke').length;
+
+    const AllapprovedCount = recentProcessed.filter(req => req.status === 'approved')
+    const AllpendingCount = recentProcessed.filter(req => req.status === 'pending').length;
+    const AllissueCount = recentProcessed.filter(req => req.status === 'pending' && req.request === 'issue').length;
+    const AllrevokeCount = recentProcessed.filter(req => req.status === 'pending' && req.request === 'revoke').length;
 
     setTotalStats((prev) => ({
       ...prev,
-      pendingCount,
       approvedCount: approvedCount.length,
+      pendingCount,
       issueCount,
       revokeCount
+    }))
+
+    setAllTotalStats((prev) => ({
+      ...prev,
+      approvedCount: AllapprovedCount.length,
+      pendingCount: AllpendingCount,
+      issueCount: AllissueCount,
+      revokeCount: AllrevokeCount
     }))
   }, [recentProcessed])
 
@@ -353,42 +383,42 @@ export default function DashboardContent() {
             {/* 통계 카드 */}
             <div className=" rounded-2xl shadow-sm border bg-darkergray text-textIcons border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-6">
-                "내 관리 현황"
+                내 관리 현황
               </h2>
 
               {isSuperAdmin ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 h-30  lg:grid-cols-6 gap-4"> 
+                <div className="grid grid-cols-2 md:grid-cols-3 h-30  lg:grid-cols-6 gap-4">
 
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
-                    <p className=" mb-6  text-lg font-medium">총 관리자</p>
+                    <p className=" mb-6  text-lg font-medium">전체 관리자</p>
                     <p className="text-3xl font-medium ">{totalAdmins || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
-                    <p className=" mb-6  text-lg font-medium">총 사용자</p>
+                    <p className=" mb-6  text-lg font-medium">전체 사용자</p>
                     <p className="text-3xl font-medium ">{totalUsers || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
                     <p className=" mb-6  text-lg font-medium">전체 수료증</p>
-                    <p className="text-3xl font-medium">{totalStats.approvedCount || 0}</p>
+                    <p className="text-3xl font-medium">{alltotalStats.approvedCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
                     <p className=" mb-6  text-lg font-medium">전체 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.pendingCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.pendingCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl  ">
                     <p className=" mb-6  text-lg font-medium">발급 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.issueCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.issueCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
                     <p className=" mb-6  text-lg font-medium">폐기 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.revokeCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.revokeCount || 0}</p>
                   </div>
 
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
-                    <p className=" mb-6  text-lg font-medium">총 사용자</p>
+                    <p className=" mb-6  text-lg font-medium">전체 사용자</p>
                     <p className="text-3xl font-medium ">{totalUsers || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
@@ -415,7 +445,7 @@ export default function DashboardContent() {
               <div className="w-[1100px] rounded-2xl " >
                 {/* <MultiXAxisLineChart rawData={MultiChartData } style={{ height: "100%", width: "100%" }} /> */}
                 <div className="p-6 bg-darkergray rounded-xl shadow-md">
-                  <h2 className="text-lg font-semibold mb-4">총 발급 된 수료증 개수</h2>
+                  <h2 className="text-lg font-semibold mb-4">일일 수료증 발급 현황</h2>
                   <ReactECharts option={option} style={{ height: 400 }} />
                 </div>
               </div>
@@ -425,17 +455,10 @@ export default function DashboardContent() {
             </div>
             {/* 최근 처리한 수료증 내역 */}
             <div className="bg-darkergray rounded-2xl min-h-200 shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-2xl font-bold text-textIcons">최근 처리 내역</h3>
-                  <Link
-                    href="/admin/certificate-requests"
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    전체 보기
-                  </Link>
                 </div>
-
                 {/* 검색바 */}
                 <div className="mb-8">
                   <div className="relative ">
@@ -446,7 +469,7 @@ export default function DashboardContent() {
                     </div>
                     <input
                       type="text"
-                      placeholder="사용자명, 수료증명, 사유로 검색..."
+                      placeholder="사용자명, 수료증명 검색..."
                       value={searchQuery}
                       onChange={handleSearchChange}
                       className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
@@ -463,13 +486,12 @@ export default function DashboardContent() {
                     )}
                   </div>
                 </div>
-
                 {/* 필터 섹션 */}
-                <div className="space-y-4  flex justify-around">
+                <div className="space-y-3  flex justify-around">
                   {/* 상태 필터 버튼들 */}
                   <div>
                     <div className="flex flex-wrap gap-2 items-center">
-                    <h4 className=" font-medium text-gray-700 text-lg">상태별 필터 : </h4>
+                      <h4 className=" font-medium text-gray-700 ">상태별 필터 : </h4>
                       <button
                         onClick={() => handleFilterClick('all')}
                         className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'all'
@@ -508,11 +530,10 @@ export default function DashboardContent() {
                       </button>
                     </div>
                   </div>
-
                   {/* 날짜 필터 버튼들 */}
                   <div>
                     <div className="flex flex-wrap gap-2 items-center">
-                    <h4 className="font-medium text-gray-700 ">기간별 필터 : </h4>
+                      <h4 className="font-medium text-gray-700 ">기간별 필터 : </h4>
                       <button
                         onClick={() => handleDateFilterClick('all')}
                         className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'all'
@@ -534,7 +555,7 @@ export default function DashboardContent() {
                       <button
                         onClick={() => handleDateFilterClick('week')}
                         className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${dateFilter === 'week'
-                         ? 'bg-deepnavy text-whiteback shadow-xl'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
                           : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                           }`}
                       >
@@ -590,164 +611,191 @@ export default function DashboardContent() {
                   )}
                 </div>
               ) : (
-                <>
-                  <div className="space-y-3 p-4 md:p-6">
-                    {/* 헤더 - 데스크톱에서만 표시 */}
-                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg  font-medium text-gray-500 uppercase tracking-wider">
-                      <div>번호</div>
-                      <div>사용자 ID</div>
-                      <div>요청 유형</div>
-                      <div>과정명</div>
-                      <div>내용</div>
-                      <div>처리일</div>
-                      <div>상태</div>
 
-                    </div>
+                <div className="  min-h-150 p-6 flex flex-col justify-between rounded-lg shadow overflow-hidden">
+                  <div>
+                    <div className="space-y-3 p-4 md:p-6">
+                      {/* 헤더 - 데스크톱에서만 표시 */}
+                      <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg  font-medium text-gray-500 uppercase tracking-wider">
+                        <div>번호</div>
+                        <div>사용자 ID</div>
+                        <div>요청 유형</div>
+                        <div>과정명</div>
+                        <div>내용</div>
+                        <div>처리일</div>
+                        <div>상태</div>
 
-                    {/* 데이터 행들 */}
-                    {paginatedItems.map((request, index) => (
-                      <div key={request._id || (startIndex + index)} className="bg-white border  border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      </div>
 
-                        {/* 모바일 레이아웃 */}
-                        <div className="md:hidden space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      {/* 데이터 행들 */}
+                      {paginatedItems.map((request, index) => (
+                        <div key={request._id || (startIndex + index)} className="bg-white border  border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+
+                          {/* 모바일 레이아웃 */}
+                          <div className="md:hidden space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                                 <span className="text-sm font-medium text-gray-600">
                                   {request.userName?.charAt(0) || request.userId?.charAt(0) || 'U'}
                                 </span>
                               </div> */}
-                              <div className="text-sm font-medium text-gray-900">
-                                {highlightText(request.userName || request.userId, searchQuery)}
+                                <div className="text-sm font-medium text-gray-900">
+                                  {highlightText(request.userName || request.userId, searchQuery)}
+                                </div>
                               </div>
-                            </div>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.action === 'approved' ? 'bg-green-100 text-green-700'
-                              : request.action === 'rejected' ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                              {request.action === 'approved'
-                                ? (request.requestType === 'revoke' ? '폐기됨' : '승인됨')
-                                : request.action === 'rejected' ? '거절됨' : '처리됨'}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <span className="text-gray-500">유형: </span>
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.requestType === 'issue'
-                                ? 'bg-blue-100 text-blue-700'
-                                : request.requestType === 'revoke'
-                                  ? 'bg-red-100 text-red-700'
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.action === 'approved' ? 'bg-green-100 text-green-700'
+                                : request.action === 'rejected' ? 'bg-red-100 text-red-700'
                                   : 'bg-yellow-100 text-yellow-700'
                                 }`}>
-                                {request.requestType === 'issue' ? '신규발급'
-                                  : request.requestType === 'revoke' ? '폐기요청'
-                                    : '재발급'}
+                                {request.action === 'approved'
+                                  ? (request.requestType === 'revoke' ? '폐기됨' : '승인됨')
+                                  : request.action === 'rejected' ? '거절됨' : '처리됨'}
                               </span>
                             </div>
-                            <div>
-                              <span className="text-gray-500">처리일: </span>
-                              <span className="text-gray-900">
-                                {new Date(request.createdAt).toLocaleDateString('ko-KR')}
-                              </span>
-                            </div>
-                          </div>
 
-                          <div className="space-y-1">
-                            <div className="text-sm">
-                              <span className="text-gray-500">과정명: </span>
-                              <span className="text-gray-900">
-                                {highlightText(request.certificateName, searchQuery)}
-                              </span>
-                            </div>
-                            {request.reason && (
-                              <div className="text-sm">
-                                <span className="text-gray-500">사유: </span>
-                                <span className="text-gray-700">
-                                  {highlightText(request.reason, searchQuery)}
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <span className="text-gray-500">유형: </span>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.requestType === 'issue'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : request.requestType === 'revoke'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                  {request.requestType === 'issue' ? '신규발급'
+                                    : request.requestType === 'revoke' ? '폐기요청'
+                                      : '재발급'}
                                 </span>
                               </div>
-                            )}
-                          </div>
-                        </div>
+                              <div>
+                                <span className="text-gray-500">처리일: </span>
+                                <span className="text-gray-900">
+                                  {new Date(request.createdAt).toLocaleDateString('ko-KR')}
+                                </span>
+                              </div>
+                            </div>
 
-                        {/* 데스크톱 레이아웃 */}
-                        <div className="hidden  text-center md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] gap-4 items-center">
-                          <div>{startIndex + index + 1}</div>
-                          {/* <div className="flex items-center space-x-3"> */}
-                          {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="text-gray-500">과정명: </span>
+                                <span className="text-gray-900">
+                                  {highlightText(request.certificateName, searchQuery)}
+                                </span>
+                              </div>
+                              {request.reason && (
+                                <div className="text-sm">
+                                  <span className="text-gray-500">사유: </span>
+                                  <span className="text-gray-700">
+                                    {highlightText(request.reason, searchQuery)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 데스크톱 레이아웃 */}
+                          <div className="hidden  text-center md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] gap-4 items-center">
+                            <div>{startIndex + index + 1}</div>
+                            {/* <div className="flex items-center space-x-3"> */}
+                            {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                               <span className="text-sm font-medium text-gray-600">
                                 {request.userName?.charAt(0) || request.userId?.charAt(0) || 'U'}
                               </span>
                             </div> */}
-                          {/* </div> */}
-                          <div className="text-sm  font-medium text-gray-900">
-                            {highlightText(request.userName || request.userId, searchQuery)}
-                          </div>
+                            {/* </div> */}
+                            <div className="text-sm  font-medium text-gray-900">
+                              {highlightText(request.userName || request.userId, searchQuery)}
+                            </div>
 
-                          <div>
-                            <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.request === 'issue'
-                              ? 'bg-blue-100 text-blue-700'
-                              : request.request === 'revoke'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                              {request.request === 'issue' ? '발급요청'
-                                : request.request === 'revoke' ? '폐기요청'
-                                  : '발급 완료'}
-                            </span>
-                          </div>
+                            <div>
+                              <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.request === 'issue'
+                                ? 'bg-blue-100 text-blue-700'
+                                : request.request === 'revoke'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                {request.request === 'issue' ? '발급요청'
+                                  : request.request === 'revoke' ? '폐기요청'
+                                    : '발급 완료'}
+                              </span>
+                            </div>
 
-                          <div className="text-sm text-gray-900 truncate">
-                            {highlightText(request.certificateName, searchQuery)}
-                          </div>
+                            <div className="text-sm text-gray-900 truncate">
+                              {highlightText(request.certificateName, searchQuery)}
+                            </div>
 
-                          <div className="text-sm text-gray-500 truncate">
-                            { request.description || "-"}
-                          </div>
+                            <div className="text-sm text-gray-500 truncate">
+                              {request.description || "-"}
+                            </div>
 
-                          <div className="text-sm text-gray-500">
-                            {new Date(request.createdAt).toLocaleDateString('ko-KR')}
-                          </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(request.createdAt).toLocaleDateString('ko-KR')}
+                            </div>
 
-                          <div>
-                            <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.status === 'approved' ? 'bg-green-100 text-green-700'
-                              : request.status === 'rejected' ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                              {request.status === 'approved'
-                                ? (request.request === 'revoke' ? '폐기 완료' : '승인 완료')
-                                : request.status === 'rejected' ? '거절 완료' : '처리 중'}
-                            </span>
+                            <div>
+                              <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.status === 'approved' ? 'bg-green-100 text-green-700'
+                                : request.status === 'rejected' ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                {request.status === 'approved'
+                                  ? (request.request === 'revoke' ? '폐기 완료' : '승인 완료')
+                                  : request.status === 'rejected' ? '거절 완료' : '처리 중'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-
-                  {/* 페이지네이션 컨트롤 */}
                   {totalPages && (
-                    <div className="p-6 flex justify-center items-center space-x-2 border-t border-gray-200">
+                    <div className=" mt-12 mb-15 flex justify-center items-center gap-2">
                       <button
-                        onClick={handlePrevPage}
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
                       >
                         이전
                       </button>
-                      <span className="text-sm text-gray-700">
-                        페이지 {currentPage} / {totalPages}
-                      </span>
+
+                      <div className="flex gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`px-3 py-1 border border-borderbackblue rounded-lg cursor-pointer ${currentPage === pageNum
+                                ? 'bg-borderbackblue text-white '
+                                : ' hover:bg-gray-50'
+                                }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
                       <button
-                        onClick={handleNextPage}
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 cursor-pointer py-1 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 "
                       >
                         다음
                       </button>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
 
