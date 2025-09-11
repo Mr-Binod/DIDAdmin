@@ -616,7 +616,7 @@ export default function DashboardContent() {
                   <div>
                     <div className="space-y-3 p-4 md:p-6">
                       {/* 헤더 - 데스크톱에서만 표시 */}
-                      <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg  font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_1fr_1fr_1fr] text-center gap-4 px-6 py-3 bg-gray-50 rounded-lg  font-medium text-textIcons uppercase tracking-wider">
                         <div>번호</div>
                         <div>사용자 ID</div>
                         <div>요청 유형</div>
@@ -656,7 +656,7 @@ export default function DashboardContent() {
 
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div>
-                                <span className="text-gray-500">유형: </span>
+                                <span className="">유형: </span>
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${request.requestType === 'issue'
                                   ? 'bg-blue-100 text-blue-700'
                                   : request.requestType === 'revoke'
@@ -709,11 +709,11 @@ export default function DashboardContent() {
                             </div>
 
                             <div>
-                              <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.request === 'issue'
-                                ? 'bg-blue-100 text-blue-700'
+                              <span className={`inline-flex px-4 py-2 text-xs text-whiteback font-medium rounded ${request.request === 'issue'
+                                ? 'bg-borderbackblue '
                                 : request.request === 'revoke'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-yellow-100 text-yellow-700'
+                                  ? 'bg-red-800 '
+                                  : 'bg-yellow-700 '
                                 }`}>
                                 {request.request === 'issue' ? '발급요청'
                                   : request.request === 'revoke' ? '폐기요청'
@@ -734,9 +734,9 @@ export default function DashboardContent() {
                             </div>
 
                             <div>
-                              <span className={`inline-flex px-6 py-2 text-xs font-medium rounded-full ${request.status === 'approved' ? 'bg-green-100 text-green-700'
-                                : request.status === 'rejected' ? 'bg-red-100 text-red-700'
-                                  : 'bg-yellow-100 text-yellow-700'
+                              <span className={`inline-flex px-6 py-2 w-25 text-center text-xs text-whiteback font-medium rounded ${request.status === 'approved' ? 'bg-deepnavy '
+                                : request.status === 'rejected' ? 'bg-red-900 '
+                                  : 'bg-yellow-900 '
                                 }`}>
                                 {request.status === 'approved'
                                   ? (request.request === 'revoke' ? '폐기 완료' : '승인 완료')

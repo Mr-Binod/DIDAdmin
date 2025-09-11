@@ -108,10 +108,12 @@ export default function AdminCertificateRequestsPage() {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(req =>
-        (req.certificateName && req.certificateName.toLowerCase().includes(searchLower)) ||
-        (req.certificateId && req.certificateId.toLowerCase().includes(searchLower)) ||
-        (req.userName && req.userName.toLowerCase().includes(searchLower)) ||
-        (req.userEmail && req.userEmail.toLowerCase().includes(searchLower))
+        req.certificateName && req.certificateName.toLowerCase().includes(searchLower) ||
+        req.certificateId && req.certificateId.toLowerCase().includes(searchLower) ||
+        req.userName && req.userName.toLowerCase().includes(searchLower) ||
+        req.birthDate?.toLowerCase().includes(searchLower) || 
+        req.userId?.toLowerCase().includes(searchLower) 
+        
       );
     }
 
@@ -161,7 +163,7 @@ export default function AdminCertificateRequestsPage() {
   const getRequestTypeBadge = (request) => {
     switch (request) {
       case 'issue':
-        return 'bg-borderbackblue text-whiteback px-6 py-2 rounded-lg  font-medium';
+        return 'bg-borderbackblue text-whiteback px-6 py-2 rounded  font-medium';
       case 'revoke':
         return 'bg-red-800 text-whiteback px-6 py-2 rounded  font-medium';
       default:
@@ -377,27 +379,27 @@ export default function AdminCertificateRequestsPage() {
               {/* 검색 및 액션 */}
               <div className='relative mb-8'>
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
                 <input
                   type="text"
-                  placeholder="수료증명, 사용자명으로 검색..."
+                  placeholder="이름, 아이디, 수료증 명, 생년월일 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
                 /></div>
               <div className="flex flex-wrap gap-2 items-center justify-around">
                 <div className='flex items-center gap-2'>
-                  <h4 className=" font-medium text-gray-700 ">상태별 필터 : </h4>
+                  <h4 className=" font-medium  ">상태별 필터 : </h4>
                   <button
                     onClick={(e) => { setRequestTypeFilter('all'); setActiveFilter('all') }}
                     className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'all'
                       ? 'bg-deepnavy text-whiteback shadow-xl'
                       : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                       }`}
-                  >전체 요청 
+                  >전체 요청
                     {/* 전체 ({getFilterCount('all')}) */}
                   </button>
                   <button
@@ -415,12 +417,12 @@ export default function AdminCertificateRequestsPage() {
                       ? 'bg-red-900 text-whiteback shadow-xl'
                       : 'bg-lightbackblue text-textIcons hover:bg-red-900 border border-gray-200 hover:text-whiteback'
                       }`}
-                  >폐기 요청 
+                  >폐기 요청
                     {/* 전체 ({getFilterCount('all')}) */}
                   </button>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <h4 className=" font-medium text-gray-700 ">시간별 필터: </h4>
+                  <h4 className=" font-medium  ">시간별 필터: </h4>
                   <button
                     onClick={(e) => { setSortOrder('desc'); setActiveOrder('desc') }}
                     className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeOrder === 'desc'
@@ -449,7 +451,7 @@ export default function AdminCertificateRequestsPage() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block  font-medium text-gray-700 mb-2">사용자</label>
+                      <label className="block  font-medium  mb-2">사용자</label>
                       <select
                         value={userFilter}
                         onChange={(e) => setUserFilter(e.target.value)}
@@ -464,7 +466,7 @@ export default function AdminCertificateRequestsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block  font-medium text-gray-700 mb-2">시작일</label>
+                      <label className="block  font-medium  mb-2">시작일</label>
                       <input
                         type="date"
                         value={dateRange.start}
@@ -473,7 +475,7 @@ export default function AdminCertificateRequestsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block  font-medium text-gray-700 mb-2">종료일</label>
+                      <label className="block  font-medium  mb-2">종료일</label>
                       <input
                         type="date"
                         value={dateRange.end}
@@ -492,13 +494,13 @@ export default function AdminCertificateRequestsPage() {
                     <LoadingSpinner message="요청 목록 로딩 중..." />
                   </div>
                 ) : paginatedRequests.length === 0 ? (
-                  <div className="p-12 text-center text-gray-500">
+                  <div className="p-12 text-center ">
                     <p className="text-lg mb-2">처리할 요청이 없습니다</p>
                     <p className="">선택한 조건에 맞는 요청이 없습니다.</p>
                   </div>
                 ) : (
                   <Fragment  >
-                    <div className="hidden md:grid grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-[80px_150px_150px_150px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-textIcons uppercase tracking-wider">
 
                       <div className="col-span-1">번호</div>
                       <div className="col-span-1">요청자 이름</div>
@@ -516,14 +518,14 @@ export default function AdminCertificateRequestsPage() {
                             <div>{((currentPage - 1) * itemsPerPage) + index + 1}</div>
                             <div className="md:hidden space-y-3">
                               <div className="flex items-center justify-between">
-                                <div className="font-medium text-gray-900">{request.userName}</div>
+                                <div className="font-medium ">{request.userName}</div>
                                 <span className={getRequestTypeBadge(request.status)}>
                                   {getRequestTypeText(request.status)}
                                 </span>
                               </div>
 
-                              <div className=" text-gray-800">{request.certificateName}</div>
-                              <div className=" text-gray-500">요청일: {formatDate(request.createdAt)}</div>
+                              <div className=" ">{request.certificateName}</div>
+                              <div className=" ">요청일: {formatDate(request.createdAt)}</div>
                               <div className="flex gap-2 pt-2">
                                 <Button onClick={() => openProcessModal(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded ">승인</Button>
                                 <Button onClick={() => openProcessModal(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded ">거절</Button>
@@ -531,19 +533,19 @@ export default function AdminCertificateRequestsPage() {
                             </div>
 
                             {/* Desktop View */}
-                              <div className="flex items-center gap-2 col-span-1">
+                            <div className="flex items-center justify-center gap-2 col-span-1">
                               <img src={request.ImagePath} className="w-10 h-10 rounded-full" alt="" />
                               <span className="hidden md:block col-span-1  font-medium ">{request.userName}</span>
 
                             </div>
-                            <div className=" text-gray-800">{request.userId}</div>
+                            <div className=" ">{request.userId}</div>
                             <div className="hidden md:block col-span-1">
                               <span className={getRequestTypeBadge(request.request)}>
                                 {getRequestTypeText(request.request)}
                               </span>
                             </div>
-                            <div className="hidden md:block col-span-1  text-gray-800">{request.certificateName}</div>
-                            <div className="hidden md:block col-span-1  text-gray-500">{formatDate(request.createdAt)}</div>
+                            <div className="hidden md:block col-span-1  ">{request.certificateName}</div>
+                            <div className="hidden md:block col-span-1  ">{formatDate(request.createdAt)}</div>
                             <div className="hidden md:flex col-span-1 justify-center gap-2">
                               <Button
                                 onClick={() => openProcessModal(request, 'approve')}
@@ -627,13 +629,13 @@ export default function AdminCertificateRequestsPage() {
           <h3 className="text-lg font-semibold mb-4">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
           <div className="px-8">
             <div className="mb-4 flex gap-4">
-              <p className="text-gray-800 font-medium ">요청자:</p>
+              <p className=" font-medium ">요청자:</p>
               <p className=" ">
                 {requestToProcess?.userName}
               </p>
             </div>
             <div className="mb-8 flex gap-4 ">
-              <p className="text-gray-800 font-medium ">수료증:</p>
+              <p className=" font-medium ">수료증:</p>
               <p className=" ">{requestToProcess?.certificateName}</p>
             </div>
             <div className="mb-6">
@@ -643,12 +645,12 @@ export default function AdminCertificateRequestsPage() {
           {/* {processType === 'approve' ? (
             // 승인 확인
             <div className="mb-6">
-              <p className="text-gray-700 text-center">위 요청을 승인하시겠습니까?</p>
+              <p className=" text-center">위 요청을 승인하시겠습니까?</p>
             </div>
           ) : (
             // 거절 사유 입력
             <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">거절 사유 *</label>
+              <label className="block  font-medium mb-2">거절 사유 *</label>
               <textarea
                 value={processReason}
                 onChange={(e) => setProcessReason(e.target.value)}
@@ -656,14 +658,14 @@ export default function AdminCertificateRequestsPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={4}
               />
-              <p className=" text-gray-500 mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
+              <p className="  mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
             </div>
           )} */}
 
           <div className="flex gap-3 mt-6">
             <button
               onClick={closeProcessModal}
-              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-gray-300  rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
             >
               취소
             </button>
@@ -682,7 +684,7 @@ export default function AdminCertificateRequestsPage() {
       <Modal isOpen={showResultModal} onClose={closeResultModal}>
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">알림</h3>
-          <p className="text-gray-700 mb-6 text-center whitespace-pre-line">{resultMessage}</p>
+          <p className=" mb-6 text-center whitespace-pre-line">{resultMessage}</p>
 
           <button
             onClick={closeResultModal}

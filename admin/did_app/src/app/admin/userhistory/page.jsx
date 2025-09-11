@@ -73,7 +73,10 @@ export default function LoginHistoryPage() {
       filtered = filtered.filter(
         (rec) =>
           rec.didAddress?.toLowerCase().includes(lowercasedSearchTerm) ||
-          rec.userName?.toLowerCase().includes(lowercasedSearchTerm)
+          rec.userName?.toLowerCase().includes(lowercasedSearchTerm) ||
+          rec.userId?.toLowerCase().includes(lowercasedSearchTerm) ||
+          rec.birthDate?.toLowerCase().includes(lowercasedSearchTerm) ||
+          rec.didAddress?.toLowerCase().includes(lowercasedSearchTerm)
       );
     }
 
@@ -214,9 +217,9 @@ export default function LoginHistoryPage() {
               </div>
               <input
                 type="text"
-                placeholder="수료증명, 사용자명으로 검색..."
-                // value={searchTerm}
-                onChange={(e) => setSortBy(e.target.value)}
+                placeholder="이름, 아이디, 생년월일, DID 공개키로 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
               /></div>
             <div className="flex flex-wrap gap-2 items-center justify-around">

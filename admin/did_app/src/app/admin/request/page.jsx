@@ -46,7 +46,7 @@ export default function AdminRequestPage() {
   const [verified, setVerified] = useState(false);
   const [iserror, setIserror] = useState(false);
   const [activeOrder, setActiveOrder] = useState("newest");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("pending");
   //  const [showProcessModal, setShowProcessModal] = useState(false);
   const itemsPerPage = 10;
 
@@ -412,7 +412,7 @@ export default function AdminRequestPage() {
                   </div>
                 ) : (
                   <Fragment  >
-                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_80px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="hidden md:grid grid-cols-[80px_150px_150px_1fr_80px_1fr_1fr_1fr] gap-4 text-center px-6 py-3 bg-gray-50 rounded-t-lg  font-medium text-textIcons uppercase tracking-wider">
 
                       <div className="col-span-1">번호</div>
                       <div className="col-span-1">이름</div>
