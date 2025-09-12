@@ -5,7 +5,7 @@ export default function Modal({ isOpen, message, onClose, children }) {
 
   return (
     <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="text-black bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+      <div className="text-black bg-white p-6 rounded-lg shadow-lg ">
         {message && <p className="mb-4 text-center">{message}</p>}
         {children ? (
           children
@@ -13,7 +13,7 @@ export default function Modal({ isOpen, message, onClose, children }) {
           <div className="flex justify-center">
             <button
               onClick={onClose}
-              className="bg-green-600 cursor-pointer hover:bg-green-500 text-white px-4 py-2 rounded font-medium"
+              className="bg-green-700 cursor-pointer hover:bg-green-700 text-white px-4 py-2 rounded font-medium"
             >
               확인
             </button>

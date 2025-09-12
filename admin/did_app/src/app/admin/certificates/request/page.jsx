@@ -320,7 +320,7 @@ export default function AdminCertificateRequestsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <LoadingSpinner message="요청 목록을 불러오는 중..." size="lg" />
       </div>
     );
@@ -328,7 +328,7 @@ export default function AdminCertificateRequestsPage() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <p className="text-red-500">데이터를 불러오는 중 오류가 발생했습니다.</p>
       </div>
     );
@@ -533,8 +533,8 @@ export default function AdminCertificateRequestsPage() {
                             </div>
 
                             {/* Desktop View */}
-                            <div className="flex items-center justify-center gap-2 col-span-1">
-                              <img src={request.ImagePath} className="w-10 h-10 rounded-full" alt="" />
+                            <div className="flex items-center  gap-2 col-span-1">
+                              <img src={request.ImagePath} className="w-10 h-10 rounded-full object-cover" alt="" />
                               <span className="hidden md:block col-span-1  font-medium ">{request.userName}</span>
 
                             </div>
@@ -625,8 +625,8 @@ export default function AdminCertificateRequestsPage() {
 
       {/* 처리 확인 모달 */}
       <Modal isOpen={showProcessModal} onClose={closeProcessModal}>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
+        <div className="p-6 w-full text-textIcons font-medium">
+          <h3 className="text-xl font-semibold mb-6 text-center">{`요청 ${processType === 'approve' ? '승인' : '거절'}`}</h3>
           <div className="px-8">
             <div className="mb-4 flex gap-4">
               <p className=" font-medium ">요청자:</p>
@@ -639,40 +639,20 @@ export default function AdminCertificateRequestsPage() {
               <p className=" ">{requestToProcess?.certificateName}</p>
             </div>
             <div className="mb-6">
-              <p className="text-lg  ">위 요청을 승인하시겠습니까?</p>
+              <p className="text-lg text-center mb-10 ">위 요청을 승인하시겠습니까?</p>
             </div>
           </div>
-          {/* {processType === 'approve' ? (
-            // 승인 확인
-            <div className="mb-6">
-              <p className=" text-center">위 요청을 승인하시겠습니까?</p>
-            </div>
-          ) : (
-            // 거절 사유 입력
-            <div className="mb-4">
-              <label className="block  font-medium mb-2">거절 사유 *</label>
-              <textarea
-                value={processReason}
-                onChange={(e) => setProcessReason(e.target.value)}
-                placeholder="거절 사유를 입력해주세요 (필수)"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                rows={4}
-              />
-              <p className="  mt-1">* 거절 사유는 사용자에게 전달됩니다.</p>
-            </div>
-          )} */}
-
           <div className="flex gap-3 mt-6">
             <button
               onClick={closeProcessModal}
-              className="flex-1 px-4 py-2 bg-gray-300  rounded-lg hover:bg-gray-200 cursor-pointer transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-deepnavy text-white  rounded-lg hover:bg-borderbackblue cursor-pointer transition-colors font-medium"
             >
               취소
             </button>
             <button
               onClick={confirmProcessRequest}
               disabled={processRequestMutation.isPending}
-              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors cursor-pointer font-medium ${processType === 'approve' ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'} disabled:bg-gray-400`}
+              className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors cursor-pointer font-medium ${processType === 'approve' ? 'bg-green-700 hover:bg-green-600' : 'bg-red-800 hover:bg-red-700'} disabled:bg-gray-400`}
             >
               {processRequestMutation.isPending ? <LoadingSpinner size="sm" showMessage={false} /> : (processType === 'approve' ? '승인 확정' : '거절 확정')}
             </button>

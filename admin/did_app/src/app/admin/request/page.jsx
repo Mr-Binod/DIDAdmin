@@ -130,6 +130,8 @@ export default function AdminRequestPage() {
     approved: 0,
     rejected: 0
   });
+  
+
   // 통계 데이터 로드
   useEffect(() => {
     const loadStats = async () => {
@@ -153,11 +155,11 @@ export default function AdminRequestPage() {
     };
 
     loadStats();
-    const total = requests.length;
-    const pending = requests.filter(r => !r.approved && !r.rejected).length;
-    const approved = requests.filter(r => r.approved).length;
-    const rejected = requests.filter(r => r.rejected).length;
-    setStats({ total, pending, approved, rejected });
+    // const total = requests.length;
+    // const pending = requests.filter(r => !r.approved && !r.rejected).length;
+    // const approved = requests.filter(r => r.approved).length;
+    // const rejected = requests.filter(r => r.rejected).length;
+    // setStats({ total, pending, approved, rejected });
   }, [requests]);
 
   const closeConfirmModal = () => {
@@ -249,22 +251,22 @@ export default function AdminRequestPage() {
           {/* 상단 헤더 */}
           <div className="mb-8 ">
             <h1 className="text-2xl sm:text-3xl font-bold text-whiteback mb-2">관리자 가입 요청 관리</h1>
-            <p className="text-whiteback ">관리자 가입 요청을 수락 또는 거절할 수 있습니다.</p>
+            <p className="text-whiteback ">관리자 가입 요청을 승인 또는 거절할 수 있습니다.</p>
           </div>
 
           {/* 통계 카드 - 대기중 요청만 표시 */}
           <div className=" rounded-2xl text-textIcons bg-darkergray gap-4 p-6 mb-6">
             <h2 className="text-lg font-bold  mb-6">
-              수료증 요청
+              관리자 가입 요청
             </h2>
             <div className='grid grid-cols-1 md:grid-cols-5 px-15 gap-10'>
               <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
-                <div className="mb-6 text-lg font-medium ">전체 가입 요청</div>
-                <div className="text-3xl  font-medium ">{stats.total}</div>
+                <div className="mb-6 text-lg font-medium ">가입 처리완료</div>
+                <div className="text-3xl  font-medium ">{stats.approved + stats.rejected}</div>
               </div>
               <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
-                <div className="mb-6 text-lg font-medium ">저리완료 요청</div>
-                <div className="text-3xl  font-medium ">{stats.approved + stats.rejected}</div>
+                <div className="mb-6 text-lg font-medium ">전체 가입 요청</div>
+                <div className="text-3xl  font-medium ">{stats.total}</div>
               </div>
               <div className="bg-darkergray p-4 rounded-xl  text-center border border-gray-200 shadow-2xl">
                 <div className="mb-6 text-lg font-medium ">대기중 요청</div>
@@ -320,7 +322,7 @@ export default function AdminRequestPage() {
                       ? 'bg-deepnavy text-whiteback shadow-xl'
                       : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
                       }`}
-                  >가입 수락
+                  >가입 승인
                     {/* 전체 ({getFilterCount('all')}) */}
                   </button>
                   <button
@@ -439,14 +441,14 @@ export default function AdminRequestPage() {
                               <div className=" ">회사명 : {request.company}</div>
                               <div className=" ">요청일 : {formatDate(request.createdAt)}</div>
                               <div className="flex gap-2 pt-2">
-                                <Button onClick={() => handleAction(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded-sm ">수락</Button>
+                                <Button onClick={() => handleAction(request, 'approve')} className="bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded-sm ">승인</Button>
                                 <Button onClick={() => handleAction(request, 'reject')} className="bg-red-100 text-red-800 hover:bg-red-200 px-3 py-1 rounded-sm ">거절</Button>
                               </div>
                             </div>
 
                             {/* Desktop View */}
-                            <div className="flex items-center gap-2 col-span-1">
-                              <img src={request.imgPath} className="w-10 h-10 rounded-full" alt="" />
+                            <div className="flex items-center  gap-2 col-span-1">
+                              <img src={request.imgPath} className="w-10 h-10 rounded-full object-cover" alt="" />
                               <span className="hidden md:block col-span-1  font-medium ">{request.userName}</span>
 
                             </div>
@@ -461,14 +463,14 @@ export default function AdminRequestPage() {
                             <div className="hidden md:block col-span-1  ">{formatDate(request.createdAt)}</div>
                             <div className="hidden md:flex col-span-1 justify-center gap-2">
                               {statusFilter !== "rejected" ? <span >
-                                {statusFilter === "approved" ? <div className="  text-white  py-2 px-6 bg-deepnavy rounded-md">수락 완료
+                                {statusFilter === "approved" ? <div className="  text-white  py-2 px-6 bg-deepnavy rounded-md">승인 완료
                                 </div> : <div className="flex items-center gap-4 justify-center">
                                   <Button
                                     onClick={() => handleAction(request, 'approve')}
                                     // disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
                                     className="bg-deepnavy text-whiteback hover:bg-borderbackblue px-6 py-2 cursor-pointer"
                                   >
-                                    수락
+                                    승인
                                   </Button>
                                   <Button
                                     onClick={() => handleAction(request, 'reject')}
@@ -545,17 +547,17 @@ export default function AdminRequestPage() {
       </div>
 
       <Modal isOpen={showConfirmModal} onClose={closeConfirmModal}>
-        <div className=" w-max mx-auto">
+        <div className=" w-full min-h-50 flex flex-col flex-wrap justify-around mx-auto">
           <h3 className="text-lg  font-semibold mb-4">
             {actionType === "approve" ? "가입 승인" : "가입 거절"}
           </h3>
-          <p className="text-gray-600 mb-8">
+          <div className="text-lg mb-8">
             {selectedRequest && (
               actionType === "approve"
-                ? `${selectedRequest.userName}님의 관리자 가입을 승인하시겠습니까?`
-                : `${selectedRequest.userName}님의 관리자 가입을 거절하시겠습니까?`
+                ? <div className="text-center font-medium"><div>"{selectedRequest.userName}"님의 관리자 가입을</div><div>승인하시겠습니까?</div></div>
+                : <div className="text-center font-medium"><div>"{selectedRequest.userName}"님의 관리자 가입을</div><div>거절하시겠습니까?</div></div>
             )}
-          </p>
+          </div>
           {/* 거절 시 사유 입력 필드 */}
           {actionType === "reject" && (
             <div className="mb-6">
@@ -576,10 +578,10 @@ export default function AdminRequestPage() {
               </p>
             </div>
           )}
-          <div className="w-full flex justify-around gap-2">
+          <div className="w-full flex text-whiteback justify-around gap-2">
             <button
               onClick={closeConfirmModal}
-              className="bg-gray-300 text-gray-700 cursor-pointer hover:bg-gray-400 px-12 py-2 rounded"
+              className="bg-gray-800  cursor-pointer hover:bg-gray-700 px-12 py-2 rounded"
             >
               취소
             </button>
@@ -587,10 +589,10 @@ export default function AdminRequestPage() {
               onClick={confirmAction}
               disabled={actionType === "reject" && !rejectionReason.trim()}
               className={`px-12 cursor-pointer py-2 rounded text-white ${actionType === "approve"
-                ? "bg-green-600 hover:bg-green-700"
+                ? "bg-green-700 hover:bg-green-600"
                 : actionType === "reject" && !rejectionReason.trim()
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-red-600 hover:bg-red-700"
+                  : "bg-red-800 hover:bg-red-700"
                 }`}
             >
               {actionType === "approve" ? "승인" : "거절"}
