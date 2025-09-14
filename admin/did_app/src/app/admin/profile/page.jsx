@@ -70,21 +70,21 @@ const CopyIcon = (props) => (
 );
 
 const UserIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
 
 const CameraIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
     <circle cx="12" cy="13" r="3" />
   </svg>
 );
 
 const XIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 6 6 18" /><path d="m6 6 12 12" />
   </svg>
 );
@@ -159,7 +159,7 @@ const ProfileEditModal = ({ isOpen, onClose, userInfo, onProfileUpdate }) => {
         setSuccessMessage('');
 
         try {
-          if(!imageUrl) return
+          if (!imageUrl) return
           const response = await fetch(imageUrl);
           const blob = await response.blob();
           const filename = imageUrl.split('/').pop() || 'profile.png';
@@ -218,31 +218,31 @@ const ProfileEditModal = ({ isOpen, onClose, userInfo, onProfileUpdate }) => {
       setError(err.response?.data?.message || 'An error occurred while updating the profile.');
       setIsSubmitting(false);
     }
-    useEffect(() => {
-      const reducedNewUsers = records.reduce((acc, rec) => {
-        if (rec.createdAt) {
-          const date = rec.createdAt.split("T")[0];
-          acc[date] = (acc[date] || 0) + 1;
-        }
-        return acc;
-      }, {});
+    // useEffect(() => {
+    //   const reducedNewUsers = records.reduce((acc, rec) => {
+    //     if (rec.createdAt) {
+    //       const date = rec.createdAt.split("T")[0];
+    //       acc[date] = (acc[date] || 0) + 1;
+    //     }
+    //     return acc;
+    //   }, {});
 
-      const reducedTodayVisitors = records.reduce((acc, rec) => {
-        if (rec.updatedAt) {
-          const date = rec.updatedAt.split("T")[0];
-          acc[date] = (acc[date] || 0) + 1;
-        }
-        return acc;
-      }, {});
+    //   const reducedTodayVisitors = records.reduce((acc, rec) => {
+    //     if (rec.updatedAt) {
+    //       const date = rec.updatedAt.split("T")[0];
+    //       acc[date] = (acc[date] || 0) + 1;
+    //     }
+    //     return acc;
+    //   }, {});
 
-      const newUsersDates = Object.keys(reducedNewUsers).sort();
-      const newUsersCounts = newUsersDates.map(date => reducedNewUsers[date]);
-      setNewUsersChartData({ dates: newUsersDates, counts: newUsersCounts });
+    //   const newUsersDates = Object.keys(reducedNewUsers).sort();
+    //   const newUsersCounts = newUsersDates.map(date => reducedNewUsers[date]);
+    //   setNewUsersChartData({ dates: newUsersDates, counts: newUsersCounts });
 
-      const visitorsDates = Object.keys(reducedTodayVisitors).sort();
-      const visitorsCounts = visitorsDates.map(date => reducedTodayVisitors[date]);
-      setVisitorsChartData({ dates: visitorsDates, counts: visitorsCounts });
-    }, []);
+    //   const visitorsDates = Object.keys(reducedTodayVisitors).sort();
+    //   const visitorsCounts = visitorsDates.map(date => reducedTodayVisitors[date]);
+    //   setVisitorsChartData({ dates: visitorsDates, counts: visitorsCounts });
+    // }, []);
 
   };
 

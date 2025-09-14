@@ -29,7 +29,7 @@ export default function Sidebar() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['adminsInfo'],
     queryFn: async () => {
-      const {data} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + `/user/oauth`, {withCredentials : true})
+      const {data} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + `/admin/oauth`, {withCredentials : true})
       const adminRequests = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + `/admin/pendingadmins`);
       console.log(adminRequests.data, "admin list for pending count");
       console.log(data, "adminInfo")
@@ -245,9 +245,10 @@ export default function Sidebar() {
         {/* 하단 로그아웃 버튼 */}
         <div className="absolute bottom-0 left-0 right-0 p-4 pb-16">
           <button
-            onClick={() => {
-              localStorage.removeItem('currentAdmin');
-              window.location.href = '/';
+            onClick={async () => {
+              await axios.get(process.env.NEXT_PUBLIC_BASE_URL + '/admin/logout', {
+                withCredentials : true
+              })
             }}
             className="w-full flex items-center justify-center px-4 py-3 cursor-pointer font-medium text-whiteback   rounded-lg hover:bg-whiteback hover:text-black transition-colors"
           >
