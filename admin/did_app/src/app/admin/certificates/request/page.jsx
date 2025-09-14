@@ -6,7 +6,7 @@ import Modal from '../../../../components/UI/Modal';
 import LoadingSpinner from "../../../../components/UI/Spinner";
 import Input from "../../../../components/UI/Input";
 import Button from '../../../../components/UI/Button';
-import { useAdminInfoStore } from '../../../../Store/useAdminStore';
+import { useAdminInfoStore, useWebSocket } from '../../../../Store/useAdminStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import Processing from '../../../../components/UI/Processing';
@@ -33,6 +33,7 @@ export default function AdminCertificateRequestsPage() {
   const [iserror, setIserror] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeOrder, setActiveOrder] = useState('desc');
+  const {Socket, setSocket} = useWebSocket();
 
   const itemsPerPage = 10; // 5개로 고정
 
@@ -203,12 +204,30 @@ export default function AdminCertificateRequestsPage() {
     setResultMessage("");
   };
 
+  useEffect(() => {
+    console.log(Socket, user, 'useeffect')
+    Socket?.emit("sendNotification", {
+      id: user.userId, 
+      title : '수료증 발급',  
+      message: "Hello from frontend!",
+      ts: Date.now() - 1000 * 60 * 5,
+      read : false
+     });
+  },[user])
+
   // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
   const confirmProcessRequest = async () => {
     if (!requestToProcess) return;
     setLoad(true);
     closeProcessModal()
     try {
+      Socket.emit("sendNotification", {
+        id: user.userId, 
+        title : '수료증 발급',  
+        message: "Hello from frontend!",
+        ts: Date.now() - 1000 * 60 * 5,
+        read : false
+       });
       // 거절일 때만 사유 입력 필수
       if (processType === 'reject') {
         if (requestToProcess.request === 'revoke') {

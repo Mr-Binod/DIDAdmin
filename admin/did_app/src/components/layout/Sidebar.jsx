@@ -14,7 +14,7 @@ export default function Sidebar() {
   const [pendingCount, setPendingCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const { isSuperAdmin } = useIsSuperAdminStore();
+  const { isSuperAdmin, setIsSuperAdmin } = useIsSuperAdminStore();
   const { requests, setRequests } = useAdminRequestStore();
   const {admin, setAdmin} = useAdminInfoStore();
   const itemsPerPage = 10; // 페이지당 항목 수
@@ -34,9 +34,11 @@ export default function Sidebar() {
       console.log(adminRequests.data, "admin list for pending count");
       console.log(data, "adminInfo")
       if(data.data) {
-        setAdmin(data.data[0])}
-      else {
-        setAdmin(data)
+        setAdmin(data.data[0])
+        setIsSuperAdmin(data.data[0]?.grade === 2)}
+        else {
+          setAdmin(data)
+          setIsSuperAdmin(data?.grade === 2)
       }
       setRequests(adminRequests.data.data);
       // const pendingAdmins = admins.filter(admin => !admin.approved && !admin.rejected);

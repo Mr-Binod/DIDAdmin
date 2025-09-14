@@ -22,8 +22,8 @@ export const useStatusFilterStore = create((set) => ({
 }))
 
 export const useWebSocket = create((set, get) => ({
-    socket: null,
-    setSocket: (data) => set((prev) => ({ ...prev, socket: data })),
+    Socket: null,
+    setSocket: (data) => set((prev) => ({ ...prev, Socket: data })),
 }))
 
 export const useNotificationData = create((set, get) => ({
@@ -35,7 +35,7 @@ export const useNotificationData = create((set, get) => ({
         })),
 
     setNotificationDelete : () => set(() => ({notification : []})),
-    setNotificationAllRead : () => set((prev) => prev.map((n) => ({ ...n, read: true })))
+    setNotificationAllRead : (data) => set(() => data.map((n) => ({ ...n, read: true })))
 }))
 
 export const useMessageData = create((set, get) => ({

@@ -24,9 +24,7 @@ export default function RootLayout({ children }) {
 
   useEffect(() => {
     // connect to backend WebSocket
-    const socket = io('https://api.sealiumback.store', {
-      transports: ["websocket"], // force pure WebSocket, skip long polling
-    });
+    const socket = io("wss://api.sealiumback.store");
     console.log('socketconnect', socket)
     setSocket(socket)
   
