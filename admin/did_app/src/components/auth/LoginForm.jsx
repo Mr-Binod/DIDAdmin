@@ -1,18 +1,62 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "../UI/Button";
 import Input from "../UI/Input";
 import Modal from "../UI/Modal";
-import AdminSignupForm from "../../app/admin/signup/page";
-import axiox from "axios";
-import { useAdminInfoStore } from "../../Store/useAdminStore";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
-import { useRef } from 'react';
 
+function CurvedSealium() {
+  const groupRef = useRef();
+  const letters = 'Sealium'.split('');
+  const radius = 5; // radius of the curve
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y -= 0.012; // rotate around Y-axis
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, 0, 0]}>
+      {letters.map((letter, i) => {
+        const angle = (i - (letters.length - 1) / 2) * 0.32; // spacing
+        const x = Math.sin(angle) * radius;
+        const z = Math.cos(angle) * radius;
+        const rotationY = angle;
+
+        return (
+          <Text
+            key={i}
+            position={[x, 0, z]}
+            rotation={[0, rotationY, 0]}
+            fontSize={2}
+            color="#2A4259"
+            anchorX="center"
+            anchorY="middle"
+            font="/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf"
+          >
+            {letter}
+          </Text>
+        );
+      })}
+    </group>
+  );
+}
+
+const RotatingText = React.memo(function RotatingText() {
+  return (
+    <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1} />
+      <CurvedSealium />
+    </Canvas>
+  );
+});
 
 export default function LoginForm() {
   const [idOrEmail, setIdOrEmail] = useState("");
@@ -68,7 +112,7 @@ export default function LoginForm() {
 
     try {
       console.log(process.env.NEXT_PUBLIC_BASE_URL, 'baseurl')
-      const adminLogin = await axiox.post(process.env.NEXT_PUBLIC_BASE_URL + "/admin/login", {
+      const adminLogin = await axios.post(process.env.NEXT_PUBLIC_BASE_URL + "/admin/login", {
         userId: idOrEmail,
         password: password
       },
@@ -89,56 +133,6 @@ export default function LoginForm() {
       setLoading(false);
     }
   };
-
-  function CurvedSealium() {
-    const groupRef = useRef();
-    const letters = 'Sealium'.split('');
-    const radius = 5; // radius of the curve
-
-    useFrame(() => {
-        if (groupRef.current) {
-            groupRef.current.rotation.y -= 0.012; // rotate around Y-axis
-        }
-    });
-
-    return (
-        <group ref={groupRef} position={[0, 0, 0]}>
-            {letters.map((letter, i) => {
-                const angle = (i - (letters.length - 1) / 2) * 0.32; // spacing
-                const x = Math.sin(angle) * radius;
-                const z = Math.cos(angle) * radius;
-                const rotationY = angle;
-
-                return (
-                    <Text
-                        key={i}
-                        position={[x, 0, z]}
-                        rotation={[0, rotationY, 0]}
-                        fontSize={2}
-                        color="#2A4259"
-                        anchorX="center"
-                        anchorY="middle"
-                        font="/Merriweather/Merriweather-VariableFont_opsz,wdth,wght.ttf"
-                    >
-                        {letter}
-                    </Text>
-                );
-            })}
-        </group>
-    );
-}
-
-function RotatingText() {
-    return (
-        <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 5, 5]} intensity={1} />
-            <CurvedSealium />
-        </Canvas>
-    );
-}
-
-
 
   return (
     <>

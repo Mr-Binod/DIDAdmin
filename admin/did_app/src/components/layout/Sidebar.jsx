@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname , useRouter} from 'next/navigation';
 import { useState, useEffect, use } from 'react';
 
 export default function Sidebar() {
@@ -19,6 +19,8 @@ export default function Sidebar() {
   const {admin, setAdmin} = useAdminInfoStore();
   const itemsPerPage = 10; // 페이지당 항목 수
   const queryclient = useQueryClient()
+
+  const router = useRouter();
 
 
   useEffect(() => {
@@ -246,9 +248,11 @@ export default function Sidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 pb-16">
           <button
             onClick={async () => {
-              await axios.get(process.env.NEXT_PUBLIC_BASE_URL + '/admin/logout', {
+              const data = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + '/admin/logout', {
                 withCredentials : true
               })
+              console.log('yess', data)
+              if(data.status === 200) {router.push('/') }
             }}
             className="w-full flex items-center justify-center px-4 py-3 cursor-pointer font-medium text-whiteback   rounded-lg hover:bg-whiteback hover:text-black transition-colors"
           >

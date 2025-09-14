@@ -204,16 +204,16 @@ export default function AdminCertificateRequestsPage() {
     setResultMessage("");
   };
 
-  useEffect(() => {
-    console.log(Socket, user, 'useeffect')
-    Socket?.emit("sendNotification", {
-      id: user.userId, 
-      title : '수료증 발급',  
-      message: "Hello from frontend!",
-      ts: Date.now() - 1000 * 60 * 5,
-      read : false
-     });
-  },[user])
+  // useEffect(() => {
+  //   console.log(Socket, user, 'useeffect')
+  //   Socket?.emit("sendNotification", {
+  //     id: user.userId, 
+  //     title : '수료증 발급',  
+  //     message: "Hello from frontend!",
+  //     ts: Date.now() - 1000 * 60 * 5,
+  //     read : false
+  //    });
+  // },[user])
 
   // 요청 처리 확정 - 처리된 요청은 목록에서 제거하고 대시보드용 기록 저장
   const confirmProcessRequest = async () => {
@@ -221,13 +221,7 @@ export default function AdminCertificateRequestsPage() {
     setLoad(true);
     closeProcessModal()
     try {
-      Socket.emit("sendNotification", {
-        id: user.userId, 
-        title : '수료증 발급',  
-        message: "Hello from frontend!",
-        ts: Date.now() - 1000 * 60 * 5,
-        read : false
-       });
+      
       // 거절일 때만 사유 입력 필수
       if (processType === 'reject') {
         if (requestToProcess.request === 'revoke') {
@@ -244,6 +238,13 @@ export default function AdminCertificateRequestsPage() {
           setVerified(true)
           setTimeout(() => {
             setVerified(false);
+            Socket.emit("sendNotificationToClient", {
+              id: user.userId, 
+              title : '수료증 발급',  
+              message: "requestToProcess.certificateName 수료증 발급되었습니다",
+              ts: Date.now() - 1000 * 60 * 5,
+              read : false
+             });
           }, 1000);
           queryClient.invalidateQueries(['certificateRequests']);
           return;

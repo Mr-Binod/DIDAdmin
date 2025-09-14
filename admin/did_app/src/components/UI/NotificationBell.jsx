@@ -23,9 +23,11 @@ export default function NotificationBell({ notifications, setNotifications }) {
   }, [open]);
 
   const markAllRead = () => {
-    setNotificationAllRead();
+    if(notifications.length !== 0) setNotificationAllRead();
   };
-  const clearAll = () => setNotificationDelete();
+  const clearAll = () => {
+   if(notifications?.length !== 0) setNotificationDelete();
+  }
   // const toggleOneRead = (id) =>
   //   setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
 
@@ -67,7 +69,7 @@ export default function NotificationBell({ notifications, setNotifications }) {
             </div>
           </div>
 
-          {notifications?.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="p-4 text-sm text-gray-500">새 알림이 없습니다.</div>
           ) : (
             <ul className="max-h-[60vh] overflow-auto divide-y">
