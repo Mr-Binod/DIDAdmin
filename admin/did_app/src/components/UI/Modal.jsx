@@ -5,7 +5,7 @@ export default function Modal({ isOpen, message, onClose, children }) {
 
   return (
     <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="text-black bg-white p-6 rounded-lg shadow-lg ">
+      <div className="text-black bg-white p-10 border-2 border-deepnavy rounded-3xl shadow-lg ">
         {message && <p className="mb-4 text-center">{message}</p>}
         {children ? (
           children

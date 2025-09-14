@@ -6,7 +6,9 @@ import Sidebar from '../components/layout/Sidebar';
 import AdminNav from '../components/layout/adminNav';
 import './globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
+import { io } from "socket.io-client";
+import { useNotificationData, useWebSocket } from '../Store/useAdminStore';
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient();
 
@@ -17,6 +19,39 @@ const queryClient = new QueryClient();
 // };
 export default function RootLayout({ children }) {
   const pathname = usePathname();
+  const {setSocket} = useWebSocket();
+  const {setNotification} = useNotificationData();
+
+  useEffect(() => {
+    // connect to backend WebSocket
+    const socket = io('https://api.sealiumback.store', {
+      transports: ["websocket"], // force pure WebSocket, skip long polling
+    });
+    console.log('socketconnect', socket)
+    setSocket(socket)
+  
+    // when connected
+    socket.on("connect", () => {
+      console.log("Connected with id:", socket.id);
+    });
+  
+    // listen for notifications
+    socket.on("receiveNotification", (data) => {
+      console.log("🔔 Notification:", data);
+      setNotification(data)
+    });
+  
+    // listen for messages
+    socket.on("receiveMessage", (data) => {
+      console.log("💬 Message:", data);
+    });
+  
+    // cleanup on component unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+  
 
   const hideLayout =
     pathname === '/' || pathname === '/admin/signup' || pathname === '/reset-password';
@@ -46,7 +81,7 @@ export default function RootLayout({ children }) {
           
           /* 마우스 오버 시 스크롤바 썸 스타일 */
           ::-webkit-scrollbar-thumb:hover {
-            background-color: #b45309; /* bg-amber-700과 비슷한 색상 */
+            background-color: #2A4259; /* bg-amber-700과 비슷한 색상 */
           }
         `}</style>
       </head>

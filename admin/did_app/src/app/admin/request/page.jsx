@@ -80,7 +80,7 @@ export default function AdminRequestPage() {
     // The query's fetch function should ideally use the `statusFilter` from the Zustand store
     // to fetch the correct list (pending, approved, or rejected).
     // Invalidating the query will trigger a refetch with the new filter.
-    queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+    queryClient.invalidateQueries({ queryKey: ['adminsInfo'] });
   }, [statusFilter]);
 
   const filteredRequests = useMemo(() => {
@@ -299,7 +299,7 @@ export default function AdminRequestPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="수료증명, 사용자명으로 검색..."
+                  placeholder="이름, 아이디로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
@@ -463,12 +463,12 @@ export default function AdminRequestPage() {
                             <div className="hidden md:block col-span-1  ">{formatDate(request.createdAt)}</div>
                             <div className="hidden md:flex col-span-1 justify-center gap-2">
                               {statusFilter !== "rejected" ? <span >
-                                {statusFilter === "approved" ? <div className="  text-white  py-2 px-6 bg-deepnavy rounded-md">승인 완료
+                                {statusFilter === "approved" ? <div className="  text-white  py-2 px-6 bg-green-800 rounded-md">승인 완료
                                 </div> : <div className="flex items-center gap-4 justify-center">
                                   <Button
                                     onClick={() => handleAction(request, 'approve')}
                                     // disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                                    className="bg-deepnavy text-whiteback hover:bg-borderbackblue px-6 py-2 cursor-pointer"
+                                    className="bg-green-800 text-whiteback hover:bg-green-700 px-6 py-2 cursor-pointer"
                                   >
                                     승인
                                   </Button>
@@ -559,7 +559,7 @@ export default function AdminRequestPage() {
             )}
           </div>
           {/* 거절 시 사유 입력 필드 */}
-          {actionType === "reject" && (
+          {/* {actionType === "reject" && (
             <div className="mb-6">
               <label htmlFor="rejectionReason" className="block  font-medium text-gray-700 mb-2">
                 거절 사유 *
@@ -577,7 +577,7 @@ export default function AdminRequestPage() {
                 {rejectionReason.length}/500자
               </p>
             </div>
-          )}
+          )} */}
           <div className="w-full flex text-whiteback justify-around gap-2">
             <button
               onClick={closeConfirmModal}
@@ -587,11 +587,11 @@ export default function AdminRequestPage() {
             </button>
             <button
               onClick={confirmAction}
-              disabled={actionType === "reject" && !rejectionReason.trim()}
+              // disabled={actionType === "reject" && !rejectionReason.trim()}
               className={`px-12 cursor-pointer py-2 rounded text-white ${actionType === "approve"
                 ? "bg-green-700 hover:bg-green-600"
-                : actionType === "reject" && !rejectionReason.trim()
-                  ? "bg-gray-400 cursor-not-allowed"
+                // : actionType === "reject" && !rejectionReason.trim()
+                //   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-red-800 hover:bg-red-700"
                 }`}
             >

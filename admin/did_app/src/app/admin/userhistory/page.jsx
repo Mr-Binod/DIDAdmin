@@ -40,11 +40,8 @@ export default function LoginHistoryPage() {
   const [resultMessage, setResultMessage] = useState("");
   const [copiedDid, setCopiedDid] = useState(null);
   const [activeOrder, setActiveOrder] = useState("newest");
-  const [activeFilter, setActiveFilter] = useState("newest");
-  const [rawData, setRawData] = useState([]);
-  const [newUsersData, setNewUsersData] = useState([]);
-  const [todayVisitorsData, setTodayVisitorsData] = useState([]);
-  const [chartData, setChartData] = useState({ dates: [], counts: [] });
+  const [newUsersChartData, setNewUsersChartData] = useState({ dates: [], counts: [] });
+  const [visitorsChartData, setVisitorsChartData] = useState({ dates: [], counts: [] });
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -102,41 +99,22 @@ export default function LoginHistoryPage() {
     setCurrentPage(1); // 검색이나 정렬 바뀔 때 첫 페이지로
   }, [records, searchTerm, sortBy]);
 
-
-  useEffect(() => {
-    if (!newUsersData || newUsersData.length === 0) return
-    console.log(newUsersData, 'multiplex111');
-    // This effect runs whenever the rawData prop changes
-    const dates = Object.keys(newUsersData).sort();
-    const counts = dates.map(date => newUsersData[date]);
-    setChartData({ dates, counts });
-  }, [newUsersData]);
-
-  useEffect(() => {
-    if (!todayVisitorsData || todayVisitorsData.length === 0) return
-    console.log(todayVisitorsData, 'multiplex222');
-    // This effect runs whenever the rawData prop changes
-    const dates = Object.keys(todayVisitorsData).sort();
-    const counts = dates.map(date => todayVisitorsData[date]);
-    setChartData({ dates, counts });
-  }, [todayVisitorsData]);
-
   const option = {
     // ... (rest of your chart options)
     xAxis: {
       type: "category",
-      data: chartData.dates // Use your processed date array
+      data: newUsersChartData.dates
     },
     yAxis: {
       type: "value",
-      name: "총 수료증 개수"
+      name: "가입자 수"
     },
     series: [
       {
-        name: "Certificates Issued",
+        name: "신규 가입자",
         type: "line",
         smooth: true,
-        data: chartData.counts // Use your processed counts array
+        data: newUsersChartData.counts
       }
     ]
   };
@@ -144,18 +122,18 @@ export default function LoginHistoryPage() {
     // ... (rest of your chart options)
     xAxis: {
       type: "category",
-      data: chartData.dates // Use your processed date array
+      data: visitorsChartData.dates
     },
     yAxis: {
       type: "value",
-      name: "총 수료증 개수"
+      name: "방문자 수"
     },
     series: [
       {
-        name: "Certificates Issued",
+        name: "일일 방문자",
         type: "line",
         smooth: true,
-        data: chartData.counts // Use your processed counts array
+        data: visitorsChartData.counts
       }
     ]
   };
@@ -183,30 +161,30 @@ export default function LoginHistoryPage() {
   }, [records]);
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
     const reducedNewUsers = records.reduce((acc, rec) => {
       if (rec.createdAt) {
         const date = rec.createdAt.split("T")[0];
-        if (date >= today) {
-          acc[date] = (acc[date] || 0) + 1;
-        }
+        acc[date] = (acc[date] || 0) + 1;
       }
       return acc;
     }, {});
+
     const reducedTodayVisitors = records.reduce((acc, rec) => {
       if (rec.updatedAt) {
         const date = rec.updatedAt.split("T")[0];
-        if (date >= today) {
-          acc[date] = (acc[date] || 0) + 1;
-        }
+        acc[date] = (acc[date] || 0) + 1;
       }
       return acc;
     }, {});
-    console.log(reducedNewUsers, 'reducedNewUsers', reducedTodayVisitors, 'reducedTodayVisitors')
-    setNewUsersData(reducedNewUsers);
-    setTodayVisitorsData(reducedTodayVisitors);
-  }, [records])
 
+    const newUsersDates = Object.keys(reducedNewUsers).sort();
+    const newUsersCounts = newUsersDates.map(date => reducedNewUsers[date]);
+    setNewUsersChartData({ dates: newUsersDates, counts: newUsersCounts });
+
+    const visitorsDates = Object.keys(reducedTodayVisitors).sort();
+    const visitorsCounts = visitorsDates.map(date => reducedTodayVisitors[date]);
+    setVisitorsChartData({ dates: visitorsDates, counts: visitorsCounts });
+  }, [records]);
   const handleCopy = (did) => {
     navigator.clipboard.writeText(did);
     setCopiedDid(did);

@@ -56,7 +56,7 @@ export default function DashboardContent() {
   const [rawData, setMultiChartData] = useState([]);
 
   const itemsPerPage = 10; // 페이지당 항목 수
-  const { admin } = useAdminInfoStore();
+  const { admin, setAdmin } = useAdminInfoStore();
   const { isSuperAdmin, setIsSuperAdmin } = useIsSuperAdminStore();
 
   const [chartData, setChartData] = useState({ dates: [], counts: [] });
@@ -109,7 +109,7 @@ export default function DashboardContent() {
     // 상태 필터 적용
     if (activeFilter === 'approved') {
       filtered = filtered.filter(req =>
-        req.status === 'approved'
+        req.status === 'approved' && req.request === 'issue'
       );
     } else if (activeFilter === 'rejected') {
       filtered = filtered.filter(req => req.status === 'rejected');
@@ -117,7 +117,10 @@ export default function DashboardContent() {
       filtered = filtered.filter(req =>
         req.status === 'approved' && req.request === 'revoke'
       );
-    }
+    } else if (activeFilter === 'pending') {
+      filtered = filtered.filter(req =>
+        req.status === 'pending' 
+      )}
 
     // 날짜 필터 적용
     if (dateFilter !== 'all') {
@@ -157,7 +160,7 @@ export default function DashboardContent() {
   }, [recentProcessed, activeFilter, searchQuery, dateFilter]);
 
   useEffect(() => {
-
+    if(!recentProcessed) return
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const newtoday = new Date(today).toLocaleDateString('ko-KR');
@@ -201,10 +204,8 @@ export default function DashboardContent() {
 
   useEffect(() => {
     const ApprovedCount = async () => {
-
       const approvedVcData = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/vcrequestlogs")
-      console.log('record', approvedCount)
-      console.log(approvedVcData.data.data, 'approvedVcData')
+      if(!approvedVcData.data.data) return
       const processedData = approvedVcData.data.data.reduce((acc, record) => {
         if (record.createdAt) {
           const date = new Date(record.createdAt);
@@ -227,35 +228,16 @@ export default function DashboardContent() {
     }
     ApprovedCount()
   }, [])
-
-  //   // const processedRequests = JSON.parse(localStorage.getItem('admin_processed_requests') || '[]');
-  //   const { data: {data : processedRequests}} = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
-
-  //   console.log(processedRequests, 'processedRequests')
-
-  //   const sortedRequests = processedRequests.approvedVc
-  //     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  //   setRecentProcessed(sortedRequests.approvedVc);
-  // };
-
   useEffect(() => {
     const getProcessedRequests = async () => {
       const { data: { data: processedRequests } } = await axios.get(process.env.NEXT_PUBLIC_BASE_URL + "/admin/getallvcinfo")
-      console.log(processedRequests, 'processedRequests')
-      const sortedRequests = processedRequests
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort descending for recent items first
+      const sortedRequests = processedRequests?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort descending for recent items first
       setRecentProcessed(sortedRequests);
-      console.log(sortedRequests, 'sortedRequests')
     }
     getProcessedRequests()
     // loadDashboardStats()
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentAdmin");
-    router.push("/admin");
-  };
 
   const handleFilterClick = (filter) => {
     setActiveFilter(filter);
@@ -288,49 +270,13 @@ export default function DashboardContent() {
     );
   };
 
-  // 날짜 필터별 개수 계산
-  const getDateFilterCount = (filter) => {
-    if (filter === 'all') return recentProcessed.length;
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    return recentProcessed.filter(req => {
-      const processedDate = new Date(req.processedAt || req.requestedAt);
-
-      if (filter === 'today') {
-        return processedDate >= today;
-      } else if (filter === 'week') {
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        return processedDate >= weekAgo;
-      } else if (filter === 'month') {
-        const monthAgo = new Date(today);
-        monthAgo.setDate(today.getDate() - 30);
-        return processedDate >= monthAgo;
-      }
-      return false;
-    }).length;
-  };
-
-  const getFilterCount = (filter) => {
-    // console.log(recentProcessed, 'recentProcessed')
-    if (filter === 'all') return recentProcessed.length;
-    if (filter === 'approved') return recentProcessed.filter(req =>
-      req.status === 'approved'
-    ).length;
-    if (filter === 'rejected') return recentProcessed.filter(req => req.status === 'rejected' && req.request === 'issue').length;
-    if (filter === 'revoked') return recentProcessed.filter(req =>
-      req.status === 'approved' && req.request === 'revoke'
-    ).length;
-    return 0;
-  };
 
   // 페이지네이션 로직
-  const totalPages = Math.ceil(filteredProcessed.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredProcessed?.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
 
-  const paginatedItems = filteredProcessed.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedItems = filteredProcessed?.slice(startIndex, startIndex + itemsPerPage);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -367,7 +313,7 @@ export default function DashboardContent() {
           {/* 환영 메시지 */}
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-darkergray mb-2">
-              환영합니다, {admin?.userName  || "관리자"}{isSuperAdmin ? " (SAdmin)" : " Admin"} 님
+              환영합니다, {admin?.userName  || "관리자"}{isSuperAdmin ? " (SAdmin)" : " (Admin)"} 님
             </h1>
             <p className="text-sm sm:text-base text-darkergray">
               {isSuperAdmin
@@ -415,25 +361,25 @@ export default function DashboardContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
+                 <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
                     <p className=" mb-6  text-lg font-medium">전체 사용자</p>
                     <p className="text-3xl font-medium ">{totalUsers || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl">
-                    <p className=" mb-6 font-medium">전체 수료증</p>
-                    <p className="text-3xl font-medium">{totalStats.approvedCount || 0}</p>
+                    <p className=" mb-6  text-lg font-medium">전체 수료증</p>
+                    <p className="text-3xl font-medium">{alltotalStats.approvedCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
                     <p className=" mb-6  text-lg font-medium">전체 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.pendingCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.pendingCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl  ">
                     <p className=" mb-6  text-lg font-medium">발급 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.issueCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.issueCount || 0}</p>
                   </div>
                   <div className="text-center bg-darkergray p-4 shadow-2xl rounded-xl ">
                     <p className=" mb-6  text-lg font-medium">폐기 요청</p>
-                    <p className="text-3xl font-medium ">{totalStats.revokeCount || 0}</p>
+                    <p className="text-3xl font-medium ">{alltotalStats.revokeCount || 0}</p>
                   </div>
 
                 </div>
@@ -467,7 +413,7 @@ export default function DashboardContent() {
                     </div>
                     <input
                       type="text"
-                      placeholder="사용자명, 수료증명 검색..."
+                      placeholder="이름, 아이디로 검색..."
                       value={searchQuery}
                       onChange={handleSearchChange}
                       className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
@@ -498,6 +444,15 @@ export default function DashboardContent() {
                           }`}
                       >
                         전체 수료증
+                      </button>
+                      <button
+                        onClick={() => handleFilterClick('pending')}
+                        className={`px-4 py-3 cursor-pointer text-sm font-medium rounded-lg transition-colors ${activeFilter === 'pending'
+                          ? 'bg-deepnavy text-whiteback shadow-xl'
+                          : 'bg-lightbackblue text-textIcons hover:bg-deepnavy border border-gray-200 hover:text-whiteback'
+                          }`}
+                      >
+                        처리중 수료증
                       </button>
                       <button
                         onClick={() => handleFilterClick('approved')}
@@ -573,7 +528,7 @@ export default function DashboardContent() {
                 </div>
               </div>
 
-              {filteredProcessed.length === 0 ? (
+              {filteredProcessed?.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -627,7 +582,7 @@ export default function DashboardContent() {
                       </div>
 
                       {/* 데이터 행들 */}
-                      {paginatedItems.map((request, index) => (
+                      {paginatedItems?.map((request, index) => (
                         <div key={request._id || (startIndex + index)} className="bg-white border  border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                           {/* 데스크톱 레이아웃 */}
                           <div className="  text-center md:grid grid-cols-[80px_120px_120px_120px_120px_1fr_120px_120px_150px] gap-4 items-center">
@@ -646,7 +601,7 @@ export default function DashboardContent() {
                             <div>{request.userId}</div>
 
                             <div>
-                              <span className={`inline-flex px-4 py-2 text-xs text-whiteback font-medium rounded ${request.request === 'issue'
+                              <span className={`inline-flex px-4 py-2 text-sm text-whiteback font-medium rounded ${request.request === 'issue'
                                 ? 'bg-borderbackblue'
                                 : request.request === 'revoke'
                                   ? 'bg-red-800'
@@ -674,8 +629,8 @@ export default function DashboardContent() {
                             </div>
 
 
-                            <div className={` justify-center flex  text-xs text-whiteback font-medium rounded`}>
-                              <div className={` w-25 px-6 py-2 text-xs text-whiteback font-medium rounded ${request.status === 'approved' ? request.request === 'revoke' ? "bg-red-900" : 'bg-green-800 '
+                            <div className={` justify-center flex  text-sm text-whiteback font-medium rounded`}>
+                              <div className={` w-30 px-6 py-2  font-medium rounded ${request.status === 'approved' ? request.request === 'revoke' ? "bg-red-900" : 'bg-green-800 '
                                 : request.status === 'rejected' ? 'bg-yellow-800'
                                   : 'bg-gray-500 '
                                 }`}>

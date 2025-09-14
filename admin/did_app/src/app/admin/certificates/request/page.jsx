@@ -163,7 +163,7 @@ export default function AdminCertificateRequestsPage() {
   const getRequestTypeBadge = (request) => {
     switch (request) {
       case 'issue':
-        return 'bg-borderbackblue text-whiteback px-6 py-2 rounded  font-medium';
+        return 'bg-green-700 text-whiteback px-6 py-2 rounded  font-medium';
       case 'revoke':
         return 'bg-red-800 text-whiteback px-6 py-2 rounded  font-medium';
       default:
@@ -385,7 +385,7 @@ export default function AdminCertificateRequestsPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="이름, 아이디, 수료증 명, 생년월일 검색..."
+                  placeholder="이름, 아이디, 생년월일 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full h-15 pl-10 pr-10 text-md py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400   focus:border-transparent "
@@ -550,7 +550,7 @@ export default function AdminCertificateRequestsPage() {
                               <Button
                                 onClick={() => openProcessModal(request, 'approve')}
                                 disabled={processRequestMutation.isPending && requestToProcess?.id === request.id}
-                                className="bg-deepnavy text-whiteback hover:bg-borderbackblue px-6 py-2 cursor-pointer rounded-lg"
+                                className="bg-green-800 text-whiteback hover:bg-green-700 px-6 py-2 cursor-pointer rounded-lg"
                               >
                                 승인
                               </Button>
