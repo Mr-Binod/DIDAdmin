@@ -81,11 +81,13 @@ export default function AdminCertificateRequestsPage() {
       setResultMessage(`${actionText} 처리 중 오류가 발생했습니다. 다시 시도해주세요.`);
       setShowResultModal(true);
     },
+    retry: 3
   });
 
   // 데이터 가공
   const pendingRequests = useMemo(() => {
-    return allRequests.filter((req) => req.status === 'pending');
+    // if(allRequests.length === 0) return [];
+    return allRequests?.filter((req) => req.status === 'pending');
   }, [allRequests]);
 
   // 현재 탭에 따른 데이터 - 대기중인 요청만 필터링
@@ -104,6 +106,7 @@ export default function AdminCertificateRequestsPage() {
 
   // 필터링 및 정렬
   const filteredAndSortedRequests = useMemo(() => {
+    
     let filtered = currentRequests;
 
     if (searchTerm.trim()) {
@@ -238,13 +241,13 @@ export default function AdminCertificateRequestsPage() {
           setVerified(true)
           setTimeout(() => {
             setVerified(false);
-            Socket.emit("sendNotificationToClient", {
-              id: user.userId, 
-              title : '수료증 발급',  
-              message: "requestToProcess.certificateName 수료증 발급되었습니다",
-              ts: Date.now() - 1000 * 60 * 5,
-              read : false
-             });
+            // Socket.emit("sendNotificationToClient", {
+            //   id: user.userId, 
+            //   title : '수료증 발급',  
+            //   message: "requestToProcess.certificateName 수료증 발급되었습니다",
+            //   ts: Date.now() - 1000 * 60 * 5,
+            //   read : false
+            //  });
           }, 1000);
           queryClient.invalidateQueries(['certificateRequests']);
           return;
@@ -256,12 +259,12 @@ export default function AdminCertificateRequestsPage() {
           certName: requestToProcess.certificateName
 
         })
+        queryClient.invalidateQueries(['certificateRequests']);
         setLoad(false);
         setVerified(true)
         setTimeout(() => {
           setVerified(false);
         }, 1000);
-        queryClient.invalidateQueries(['certificateRequests']);
         return
       }
       if (requestToProcess.request === 'revoke') {

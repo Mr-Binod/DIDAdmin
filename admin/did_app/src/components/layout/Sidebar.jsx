@@ -252,7 +252,8 @@ export default function Sidebar() {
                 withCredentials : true
               })
               console.log('yess', data)
-              if(data.status === 200) {router.push('/') }
+              if(data.status === 200) window.location.href = '/'
+         
             }}
             className="w-full flex items-center justify-center px-4 py-3 cursor-pointer font-medium text-whiteback   rounded-lg hover:bg-whiteback hover:text-black transition-colors"
           >
