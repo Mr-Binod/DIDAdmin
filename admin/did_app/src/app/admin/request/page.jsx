@@ -130,7 +130,7 @@ export default function AdminRequestPage() {
     approved: 0,
     rejected: 0
   });
-  
+
 
   // 통계 데이터 로드
   useEffect(() => {
@@ -190,14 +190,14 @@ export default function AdminRequestPage() {
     if (!selectedRequest || !actionType) return;
     const { birthDate, imgPath, nickName, password, userId, userName } = selectedRequest;
     // 거절 시 사유가 입력되지 않으면 경고
-    console.log(actionType, 'actiontype')
-    if (actionType === "reject" && !rejectionReason.trim()) {
-      // alert("거절 사유를 입력해주세요.");
-      setLoad(false);
-      queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+    // console.log(actionType, 'actiontype')
+    // if (actionType === "reject" && !rejectionReason.trim()) {
+    //   // alert("거절 사유를 입력해주세요.");
+    //   setLoad(false);
+    //   queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
 
-      return;
-    }
+    //   return;
+    // }
     setProcessing(selectedRequest.userId);
     try {
       console.log(selectedRequest, "selectedRequest before approve/reject");
@@ -209,14 +209,21 @@ export default function AdminRequestPage() {
         setTimeout(() => {
           setVerified(false);
         }, 1000);
-        queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+        queryClient.invalidateQueries({ queryKey: ['adminsInfo'] });
         return
       } else if (actionType === "reject") {
         updateRequest = await axios.delete(process.env.NEXT_PUBLIC_BASE_URL + `/admin/rejectadmin`, { data: { userId } });
+        setVerified(true);
+        setLoad(false);
+        setTimeout(() => {
+          setVerified(false);
+        }, 2000);
+        queryClient.invalidateQueries({ queryKey: ['adminsInfo'] });
+        return
       }
       console.log(updateRequest, "updateRequest after approve/reject");
       // Invalidate the specific query with the correct key
-      queryClient.invalidateQueries({ queryKey: ['adminsInfo', isSuperAdmin] });
+      queryClient.invalidateQueries({ queryKey: ['adminsInfo'] });
       setLoad(false);
       setIserror(true);
       setTimeout(() => {
@@ -592,7 +599,7 @@ export default function AdminRequestPage() {
                 ? "bg-green-700 hover:bg-green-600"
                 // : actionType === "reject" && !rejectionReason.trim()
                 //   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-red-800 hover:bg-red-700"
+                : "bg-red-800 hover:bg-red-700"
                 }`}
             >
               {actionType === "approve" ? "승인" : "거절"}
