@@ -92,7 +92,8 @@ export default function AdminRequestPage() {
       tempRequests = tempRequests.filter(request =>
         (request.userName?.toLowerCase().includes(lowercasedTerm)) ||
         (request.userId?.toLowerCase().includes(lowercasedTerm)) ||
-        (request.company?.toLowerCase().includes(lowercasedTerm))
+        (request.company?.toLowerCase().includes(lowercasedTerm)) || 
+        (request.nickName?.toLowerCase().includes(lowercasedTerm)) 
       );
     }
 

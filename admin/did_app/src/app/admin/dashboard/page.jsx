@@ -151,8 +151,8 @@ export default function DashboardContent() {
       filtered = filtered.filter(req =>
         req.userName?.toLowerCase().includes(query) ||
         req.certificateName?.toLowerCase().includes(query) ||
-        req.reason?.toLowerCase().includes(query) ||
-        req.userId?.toLowerCase().includes(query) ||
+        req.reason?.toLowerCase().includes(query) || 
+        req.userId?.toLowerCase().includes(query) 
       );
     }
 
